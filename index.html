@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cohera Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="board.css"></head><body>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 3h8v5.2a2.3 2.3 0 1 1 0 4.6V18H3z" fill="currentColor" opacity=".32"/>
+        <path d="M13 3h8v8h-5.2a2.3 2.3 0 1 0-4.6 0H13z" fill="currentColor" opacity=".62"/>
+        <path d="M13 13h8v8h-8v-5.2a2.3 2.3 0 1 1 0-4.6z" fill="currentColor"/>
+      </svg>
+      <b>Cohera Board</b>
+    </div>
+    <nav class="nav" id="nav" aria-label="Views">
+      <button type="button" data-view="today" aria-current="page">Today <span class="badge" id="b-today"></span><kbd>1</kbd></button>
+      <button type="button" data-view="coverage">Coverage <span class="badge" id="b-cov"></span><kbd>2</kbd></button>
+      <button type="button" data-view="tasks">Tasks <span class="badge" id="b-tasks"></span><kbd>3</kbd></button>
+      <button type="button" data-view="calendar">Calendar<kbd>4</kbd></button>
+      <button type="button" data-view="clients">Clients<kbd>5</kbd></button>
+      <button type="button" data-view="inbox">Inbox <span class="badge" id="b-inbox"></span><kbd>6</kbd></button>
+    </nav>
+    <div class="rail-foot">
+      <div class="streak" id="streak"></div>
+      <div class="you" id="you"></div>
+      <span id="sync" class="tnum"></span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <h1 id="viewTitle">Today</h1>
+      <span class="date tnum" id="today"></span>
+      <label for="me" class="sr">Show</label>
+      <select id="me" class="ctl" aria-label="Show">
+        <option value="">Everyone</option>
+        <option value="Яни">Yani</option>
+        <option value="Кънчо">Kancho</option>
+        <option value="Еви">Evi</option>
+      </select>
+      <div class="grow qa">
+        <span class="icon" aria-hidden="true">+</span>
+        <input type="text" id="qa" placeholder="Add anything: “tomorrow Kancho Patricia report 30m !”  ·  press N" autocomplete="off">
+        <div class="qa-preview" id="qaPreview"></div>
+      </div>
+    </div>
+    <div id="view"><div class="state">Connecting…</div></div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Task details" aria-hidden="true">
+  <div class="dr-h">
+    <button type="button" class="tick" id="drTick" data-s="todo" aria-label="Change status">
+      <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 6.3l3 3L10.5 2.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <span id="drStatusLabel" class="chip"></span>
+    <span class="spacer"></span>
+    <button type="button" class="btn sm" id="drPick">Pick for today</button>
+    <button type="button" class="btn sm ghost" id="drClose" aria-label="Close">Esc</button>
+  </div>
+  <div class="dr-body">
+    <textarea class="dr-title" id="drTitle" rows="1" aria-label="Title"></textarea>
+    <div class="f">
+      <label for="drFirst">First step · imperative verb, one line</label>
+      <input type="text" class="ctl" id="drFirst" placeholder="Open the Metricool queue for Horizont" maxlength="60">
+    </div>
+    <div class="f-row">
+      <div class="f"><label for="drClient">Client</label><select class="ctl" id="drClient"></select></div>
+      <div class="f"><label for="drWho">Owner</label><select class="ctl" id="drWho"></select></div>
+    </div>
+    <div class="f-row">
+      <div class="f"><label for="drDue">Due</label><input type="date" class="ctl" id="drDue"></div>
+      <div class="f"><label>Size</label>
+        <div class="seg" id="drSize"><button type="button" data-size="15">15 min</button><button type="button" data-size="60">1 h</button><button type="button" data-size="240">Half day</button></div>
+      </div>
+    </div>
+    <div class="f"><label>Urgency</label>
+      <div class="seg pri-seg" id="drPri"><button type="button" data-pri="0">Normal</button><button type="button" data-pri="1"><span class="pri p1"></span>Important</button><button type="button" data-pri="2"><span class="pri p2"></span>Urgent</button></div>
+    </div>
+    <div class="f"><label for="drWait">Waiting on · leave empty when nothing blocks it</label>
+      <input type="text" class="ctl" id="drWait" placeholder="Client reply, designer files, Meta review…">
+    </div>
+    <div class="f"><label>Blocked by</label>
+      <div class="deps" id="drDeps"></div>
+      <select class="ctl" id="drDepAdd"><option value="">Add a task this one waits for…</option></select>
+    </div>
+    <div class="f"><label>Links</label>
+      <div class="links" id="drLinks"></div>
+      <div class="links-add"><input type="text" class="ctl" id="drLinkIn" placeholder="Paste a Drive, Metricool or Ads Manager link"><button type="button" class="btn sm" id="drLinkBtn">Add</button></div>
+    </div>
+    <div class="f"><label for="drNotes">Notes</label><textarea class="ctl" id="drNotes" placeholder="Anything the next person needs to know"></textarea></div>
+  </div>
+  <div class="dr-foot">
+    <span id="drStamp"></span>
+    <span class="spacer"></span>
+    <button type="button" class="btn sm ghost" id="drSomeday">Someday</button>
+    <button type="button" class="btn sm ghost danger" id="drDelete">Delete</button>
+  </div>
+</aside>
+
+<div class="focus-overlay" id="focusOverlay" hidden>
+  <div class="fo-in">
+    <div class="eyebrow">Doing now</div>
+    <h2 id="foTitle"></h2>
+    <p class="fo-step" id="foStep"></p>
+    <div class="fo-timer tnum" id="foTimer">15:00</div>
+    <div class="fo-acts">
+      <button type="button" class="btn primary" id="foDone">Done</button>
+      <button type="button" class="btn" id="foMore">5 more minutes</button>
+      <button type="button" class="btn ghost" id="foStop">Stop</button>
+    </div>
+  </div>
+</div>
+
+<div class="who-gate" id="whoGate" hidden>
+  <div class="wg-in">
+    <div class="eyebrow">Cohera Board</div>
+    <h2>Who is looking?</h2>
+    <p>Everything you tick or write is signed with this. Change it any time from the sidebar.</p>
+    <div class="wg-acts">
+      <button type="button" class="btn primary" data-who="Яни">Yani</button>
+      <button type="button" class="btn primary" data-who="Кънчо">Kancho</button>
+      <button type="button" class="btn primary" data-who="Еви">Evi</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="who-gate" id="login" hidden>
+  <div class="wg-in">
+    <div class="eyebrow">Cohera Board</div>
+    <h2>Sign in</h2>
+    <p>Your work email. You get a link, the link signs you in on this device. Only the team list gets through.</p>
+    <form><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><input type="email" class="ctl" placeholder="name@coheradigital.com" required style="min-width:260px"><button type="submit" class="btn primary">Send the link</button></div><p class="msg" style="min-height:1.4em"></p></form>
+  </div>
+</div>
+<button type="button" class="btn sm ghost" onclick="window.boardSignOut&&window.boardSignOut()" style="position:fixed;left:12px;bottom:10px;z-index:35;opacity:.7">Sign out</button>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="db-supabase.js"></script>
+<script src="parser.js"></script>
+<script src="calendar.js"></script>
+<script src="app.js"></script>
+
+</body></html>
