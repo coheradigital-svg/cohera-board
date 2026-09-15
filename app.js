@@ -617,7 +617,7 @@
   function tickFocus() {
     var ms = fo.end - Date.now(), el = $("#foTimer"), s = Math.abs(Math.round(ms / 1000)), txt = (ms < 0 ? "+" : "") + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
     el.textContent = txt; el.classList.toggle("over", ms < 0); document.title = (ms < 0 ? "⏰ " : "") + txt + " · " + fo.title;
-    if (ms < 0 && !fo.rang) { fo.rang = true; beep(); try { if (window.Notification && Notification.permission === "granted") new Notification("Time is up", { body: $("#foTitle").textContent }); } catch (e) { } }
+    if (ms < 0 && !fo.rang) { fo.rang = true; beep(); try { if (window.Notification && Notification.permission === "granted") new Notification("Времето свърши", { body: $("#foTitle").textContent }); } catch (e) { } }
   }
   function beep() { try { var ac = new (window.AudioContext || window.webkitAudioContext)(), o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 880; g.gain.value = .15; o.start(); setTimeout(function () { o.frequency.value = 1175; }, 180); setTimeout(function () { o.stop(); ac.close(); }, 420); } catch (e) { } }
   function stopFocus(done) {
