@@ -3,10 +3,18 @@
   "use strict";
 
   var PEOPLE = ["Яни", "Кънчо", "Еви"];
-  var PEOPLE_EN = { "Яни": "Yani", "Кънчо": "Kancho", "Еви": "Evi" };
+  var PEOPLE_EN = { "Яни": "Яни", "Кънчо": "Кънчо", "Еви": "Еви" };
   var PEOPLE_KEY = { "Яни": "yani", "Кънчо": "kancho", "Еви": "evi" };
-  var SIZES = { 15: "15 min", 60: "1 h", 240: "Half day" };
+  var SIZES = { 15: "15 min", 60: "1 h", 240: "Половин ден" };
+    /* Видовете задължения стоят в базата на английски, защото така са засети.
+     Превеждат се само при показване, за да не се счупи съвпадението. */
   var KIND_ORDER = ["Posts scheduled", "Ads reviewed", "Google Ads", "Report sent", "Menus", "UGC video", "Expense sheet", "Invoices"];
+  var KIND_BG = {
+    "Posts scheduled": "Постове насрочени", "Ads reviewed": "Реклами прегледани",
+    "Google Ads": "Google Ads", "Report sent": "Отчет пратен", "Menus": "Менюта",
+    "UGC video": "UGC видео", "Expense sheet": "Таблица с разходи", "Invoices": "Фактури"
+  };
+  function kindBG(k) { return KIND_BG[k] || k; }
   var CAPACITY_MIN = 240;
   var STALE_DAYS = 30;
 
@@ -31,13 +39,13 @@
   function daysSince(ts) { if (!ts) return null; return -dayDiff(String(ts).slice(0, 10)); }
   function daysInMonth(mk) { return new Date(+mk.slice(0, 4), +mk.slice(5, 7), 0).getDate(); }
   function ordinal(n) { var s = ["th", "st", "nd", "rd"], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
-  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  var DOW = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  var MON = ["яну", "фев", "мар", "апр", "май", "юни", "юли", "авг", "сеп", "окт", "ное", "дек"];
+  var DOW = ["неделя", "понеделник", "вторник", "сряда", "четвъртък", "петък", "събота"];
   function dueLabel(iso) {
     if (!iso) return "";
     var d = dayDiff(iso);
-    if (d === 0) return "today"; if (d === 1) return "tomorrow"; if (d === -1) return "yesterday";
-    if (d < -1) return Math.abs(d) + " days late";
+    if (d === 0) return "днес"; if (d === 1) return "утре"; if (d === -1) return "вчера";
+    if (d < -1) return "закъсняла с " + Math.abs(d) + " дни";
     var dt = new Date(iso + "T00:00:00");
     if (d > 1 && d < 7) return DOW[dt.getDay()];
     return MON[dt.getMonth()] + " " + dt.getDate();
@@ -77,9 +85,9 @@
   }
   function linkKind(url) {
     var u = String(url).toLowerCase();
-    if (u.indexOf("docs.google.com/spreadsheets") >= 0) return "Sheet";
-    if (u.indexOf("docs.google.com/document") >= 0) return "Doc";
-    if (u.indexOf("docs.google.com/presentation") >= 0) return "Slides";
+    if (u.indexOf("docs.google.com/spreadsheets") >= 0) return "Таблица";
+    if (u.indexOf("docs.google.com/document") >= 0) return "Документ";
+    if (u.indexOf("docs.google.com/presentation") >= 0) return "Презентация";
     if (u.indexOf("drive.google.com") >= 0) return "Drive";
     if (u.indexOf("metricool") >= 0) return "Metricool";
     if (u.indexOf("business.facebook") >= 0 || u.indexOf("adsmanager") >= 0 || u.indexOf("facebook.com/ads") >= 0) return "Ads Manager";
@@ -88,7 +96,7 @@
     if (u.indexOf("clickup") >= 0) return "ClickUp";
     if (u.indexOf("instagram.com") >= 0) return "Instagram";
     if (u.indexOf("facebook.com") >= 0) return "Facebook";
-    try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return "Link"; }
+    try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return "Линк"; }
   }
   function ageChip(t) {
     if (t.status === "done") return "";
@@ -98,7 +106,7 @@
   function chips(t, opts) {
     opts = opts || {};
     var b = "";
-    if (t.priority) b += '<span class="pri p' + t.priority + '" title="' + (t.priority === 2 ? "urgent" : "important") + '"></span>';
+    if (t.priority) b += '<span class="pri p' + t.priority + '" title="' + (t.priority === 2 ? "спешна" : "важна") + '"></span>';
     if (t.client) b += '<span class="chip client">' + esc(clientName(t.client)) + "</span>";
     if (t.assignee && !opts.noWho) b += avatar(t.assignee);
     if (t.size) b += '<span class="chip est">' + esc(sizeLabel(t.size)) + "</span>";
@@ -114,7 +122,7 @@
 
   /* ===================== store ===================== */
   var syncEl = $("#sync");
-  function failed(e) { console.warn(e); syncEl.textContent = "not saved"; syncEl.style.color = "var(--crit)"; toast("Not saved. Check your connection and try again."); }
+  function failed(e) { console.warn(e); syncEl.textContent = "not saved"; syncEl.style.color = "var(--crit)"; toast("Не се записа. Виж връзката и пробвай пак."); }
   function synced() { syncEl.textContent = "synced " + new Date().toTimeString().slice(0, 5); syncEl.style.color = ""; }
   function put(col, doc) { if (db) db.doc(col + "/" + doc.id).set(doc).then(synced, failed); }
   function patch(col, id, data) { if (db) db.doc(col + "/" + id).update(data).then(synced, failed); }
@@ -132,13 +140,13 @@
     var prev = { status: t.status, doneAt: t.doneAt, doneBy: t.doneBy };
     t.status = "done"; t.doneAt = now(); t.doneBy = S.who || "";
     saveTask(t);
-    if (undoable !== false) toast("Done: " + t.title, "Undo", function () { var f = taskById(t.id) || t; f.status = prev.status; f.doneAt = prev.doneAt; f.doneBy = prev.doneBy; saveTask(f); });
+    if (undoable !== false) toast("Готово: " + t.title, "Undo", function () { var f = taskById(t.id) || t; f.status = prev.status; f.doneAt = prev.doneAt; f.doneBy = prev.doneBy; saveTask(f); });
   }
   function deleteTask(t) {
     var copy = JSON.parse(JSON.stringify(t));
     S.tasks = S.tasks.filter(function (x) { return x.id !== t.id; });
     drop("tasks", t.id); if (S.drawerId === t.id) closeDrawer(); render();
-    toast("Deleted “" + t.title + "”", "Undo", function () { put("tasks", copy); S.tasks.push(copy); render(); });
+    toast("Изтрито „" + t.title + "”", "Undo", function () { put("tasks", copy); S.tasks.push(copy); render(); });
   }
   function cycle(t) {
     if (t.status === "doing") return markDone(t);
@@ -179,7 +187,7 @@
     var id = o.id + "_" + mk;
     var doc = { id: id, obligation: o.id, month: mk, by: S.who || "", at: now(), skipped: !!skipped };
     S.checkins[id] = doc; put("checkins", doc); if (o.client) touchClient(o.client); render();
-    toast((skipped ? "Skipped" : "Checked") + ": " + o.title, "Undo", function () { delete S.checkins[id]; drop("checkins", id); render(); });
+    toast((skipped ? "Пропуснато" : "Чекнато") + ": " + o.title, "Undo", function () { delete S.checkins[id]; drop("checkins", id); render(); });
   }
   function uncheck(o, mk) {
     var id = o.id + "_" + mk, old = S.checkins[id]; if (!old) return;
@@ -217,17 +225,33 @@
     var mine = S.tasks.filter(function (t) { return t.status !== "done" && !t.someday && (t.assignee === p || !t.assignee) && !isWaiting(t) && !pickedByAnyone(t.id); });
     function score(t) { var d = dayDiff(t.due); var s = (t.priority || 0) * 30; if (d !== null) s += d < 0 ? 40 + Math.min(20, -d) : (d === 0 ? 30 : Math.max(0, 20 - d)); if (t.size === 15) s += 5; if (t.assignee === p) s += 8; return s; }
     return mine.sort(function (a, b) { return score(b) - score(a); }).slice(0, 12).map(function (t) {
-      var d = dayDiff(t.due), why = d === null ? "" : (d < 0 ? Math.abs(d) + " days late" : (d === 0 ? "due today" : "due " + dueLabel(t.due)));
-      if (t.priority === 2) why = "urgent" + (why ? " · " + why : "");
+      var d = dayDiff(t.due), why = d === null ? "" : (d < 0 ? "закъсняла с " + Math.abs(d) + " дни" : (d === 0 ? "за днес" : "за " + dueLabel(t.due)));
+      if (t.priority === 2) why = "спешна" + (why ? " · " + why : "");
       return { t: t, why: why };
     });
   }
   function addPick(p, t) {
     if (!t.firstStep || !t.size) { S.gate = { person: p, taskId: t.id, first: t.firstStep || "", size: t.size || null }; render(); return; }
-    if (openPicks(p).length >= 3) { toast("Three picks is the plan. Finish or swap one first."); return; }
+    if (openPicks(p).length >= 3) { toast("Три неща са планът. Първо довърши или размени едно."); return; }
     var ids = picksFor(p); if (ids.indexOf(t.id) < 0) ids.push(t.id);
     setPicks(p, ids); S.gate = null; if (t.client) touchClient(t.client); render();
   }
+  /* Едно копче вместо решение. При ADHD най-скъпата стъпка е изборът кое
+     точно да хванеш, затова тук няма избор: взима се или вече започнатото,
+     или най-горното от избраните за днес, или най-силният кандидат. */
+  function grabNow(p) {
+    var doing = openPicks(p).map(taskById).filter(Boolean);
+    var started = doing.filter(function (x) { return x.status === "doing"; })[0];
+    if (started) { startFocus(started); return; }
+    if (doing.length) { startFocus(doing[0]); return; }
+    var c = candidatesFor(p)[0];
+    if (!c) { toast("Няма какво да хванеш. Отвори Задачи и вземи нещо."); return; }
+    if (!c.t.firstStep || !c.t.size) { S.gate = { person: p, taskId: c.t.id, first: c.t.firstStep || "", size: c.t.size || null }; render(); toast("Кажи първата стъпка и колко време, и тръгваме."); return; }
+    addPick(p, c.t);
+    var live = taskById(c.t.id);
+    if (live) startFocus(live);
+  }
+
   function removePick(p, id) { setPicks(p, picksFor(p).filter(function (x) { return x !== id; })); render(); }
   function carryOver(p) {
     var y = addDays(todayISO(), -1), left = picksFor(p, y).filter(function (id) { var t = taskById(id); return t && t.status !== "done" && picksFor(p).indexOf(id) < 0; });
@@ -263,9 +287,9 @@
     var u = urgency(t), cls = "row" + (u ? " " + u : "") + (t.status === "done" ? " done" : "") + (S.selected === t.id ? " selected" : "");
     var late = dayDiff(t.due) !== null && dayDiff(t.due) < 0 && t.status !== "done";
     return '<div class="' + cls + '" data-id="' + esc(t.id) + '" data-act="open">' +
-      '<button type="button" class="tick" data-s="' + esc(t.status) + '" data-act="cycle" aria-label="Change status"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 6.3l3 3L10.5 2.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+      '<button type="button" class="tick" data-s="' + esc(t.status) + '" data-act="cycle" aria-label="Смени статуса"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 6.3l3 3L10.5 2.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
       '<div class="mid"><div class="title">' + esc(t.title) + "</div>" +
-      '<div class="meta">' + chips(t, opts) + (opts.plan && t.status !== "done" ? '<button type="button" class="btn sm ghost" data-act="plan" data-id="' + esc(t.id) + '">Plan it</button>' : "") + "</div></div>" +
+      '<div class="meta">' + chips(t, opts) + (opts.plan && t.status !== "done" ? '<button type="button" class="btn sm ghost" data-act="plan" data-id="' + esc(t.id) + '">Планирай я</button>' : "") + "</div></div>" +
       '<div class="rightcol due ' + (late ? "late" : (u === "soon" ? "soon" : "")) + '">' + esc(dueLabel(t.due)) + "</div></div>";
   }
   function sortTasks(a, b) {
@@ -284,43 +308,51 @@
   /* ===================== views ===================== */
   function renderToday() {
     var html = "", people = S.me ? [S.me] : PEOPLE, wk = weekKey();
-    if (new Date().getDay() === 1 && !S.reviews[wk]) html += '<div class="banner"><b>It is Monday.</b><span>Walk through everything that is late, missed or aging. Under 20 minutes.</span><span class="spacer"></span><button type="button" class="btn primary sm" data-act="review">Start the review</button></div>';
+    var az = S.me || S.who;
+    if (az) {
+      var v = openPicks(az).map(taskById).filter(Boolean);
+      var zapochnal = v.filter(function (x) { return x.status === "doing"; })[0];
+      html += '<button type="button" class="grab" data-act="grab" data-p="' + esc(az) + '">' +
+        '<span class="grab-k">' + (zapochnal ? "Върни се към" : "Хващай нещо сега") + "</span>" +
+        '<span class="grab-t">' + esc(zapochnal ? (zapochnal.firstStep || zapochnal.title) : (v.length ? (v[0].firstStep || v[0].title) : "Ще избера вместо теб и пускам 15 минути")) + "</span></button>";
+    }
+    if (new Date().getDay() === 1 && !S.reviews[wk]) html += '<div class="banner"><b>Понеделник е.</b><span>Мини през всичко закъсняло, изпуснато и застояло. Под 20 минути.</span><span class="spacer"></span><button type="button" class="btn primary sm" data-act="review">Почвай прегледа</button></div>';
 
     people.forEach(function (p) {
       var ids = picksFor(p), planned = plannedMin(p), over = planned > CAPACITY_MIN, carry = carryOver(p);
-      html += '<div class="person-block"><h3>' + avatar(p) + esc(whoLabel(p)) + '<span class="cap' + (over ? " over" : "") + '"><b>' + esc(fmtMin(planned)) + "</b> of " + esc(fmtMin(CAPACITY_MIN)) + " planned</span></h3>";
-      if (carry.length) html += '<div class="carry"><div class="h">Unfinished from yesterday</div>' + carry.map(function (t) { return '<div class="item"><span class="t">' + esc(t.firstStep || t.title) + '</span><button type="button" class="btn sm" data-act="carry" data-p="' + esc(p) + '" data-id="' + esc(t.id) + '">Carry over</button><button type="button" class="btn sm ghost" data-act="open-id" data-id="' + esc(t.id) + '">Open</button></div>'; }).join("") + "</div>";
+      html += '<div class="person-block"><h3>' + avatar(p) + esc(whoLabel(p)) + '<span class="cap' + (over ? " over" : "") + '"><b>' + esc(fmtMin(planned)) + "</b> от " + esc(fmtMin(CAPACITY_MIN)) + " планирани</span></h3>";
+      if (carry.length) html += '<div class="carry"><div class="h">Недовършено от вчера</div>' + carry.map(function (t) { return '<div class="item"><span class="t">' + esc(t.firstStep || t.title) + '</span><button type="button" class="btn sm" data-act="carry" data-p="' + esc(p) + '" data-id="' + esc(t.id) + '">Прехвърли за днес</button><button type="button" class="btn sm ghost" data-act="open-id" data-id="' + esc(t.id) + '">Отвори</button></div>'; }).join("") + "</div>";
       html += '<div class="picks">';
       ids.forEach(function (id) {
         var t = taskById(id); if (!t) return;
         html += '<div class="pick' + (t.status === "done" ? " done" : "") + '" data-id="' + esc(t.id) + '">' +
           '<div><div class="step">' + esc(t.firstStep || t.title) + "</div>" + (t.firstStep ? '<div class="of">' + esc(t.title) + "</div>" : "") +
           '<div class="meta">' + chips(t, { noWho: true, due: true }) + "</div></div>" +
-          '<div class="acts">' + (t.status === "done" ? '<span class="chip">done</span>' :
-            '<button type="button" class="btn primary sm" data-act="start" data-id="' + esc(t.id) + '">Start</button>' +
-            '<button type="button" class="btn sm" data-act="done-id" data-id="' + esc(t.id) + '">Done</button>') +
-          '<button type="button" class="btn sm ghost" data-act="open-id" data-id="' + esc(t.id) + '">Open</button>' +
-          '<button type="button" class="btn sm ghost" data-act="unpick" data-p="' + esc(p) + '" data-id="' + esc(t.id) + '" aria-label="Remove pick">×</button></div></div>';
+          '<div class="acts">' + (t.status === "done" ? '<span class="chip">готова</span>' :
+            '<button type="button" class="btn primary sm" data-act="start" data-id="' + esc(t.id) + '">Старт</button>' +
+            '<button type="button" class="btn sm" data-act="done-id" data-id="' + esc(t.id) + '">Готова</button>') +
+          '<button type="button" class="btn sm ghost" data-act="open-id" data-id="' + esc(t.id) + '">Отвори</button>' +
+          '<button type="button" class="btn sm ghost" data-act="unpick" data-p="' + esc(p) + '" data-id="' + esc(t.id) + '" aria-label="Махни я от днес">×</button></div></div>';
       });
       var open = openPicks(p).length;
-      html += '<button type="button" class="pick-add' + (open >= 3 ? " full" : "") + '" data-act="gate" data-p="' + esc(p) + '">' + (open >= 3 ? "Three picks. That is the plan." : "+ Pick " + (ids.length ? "another" : "the first thing") + " for today") + "</button>";
+      html += '<button type="button" class="pick-add' + (open >= 3 ? " full" : "") + '" data-act="gate" data-p="' + esc(p) + '">' + (open >= 3 ? "Три неща. Това е планът за днес." : (ids.length ? "+ Вземи още едно за днес" : "+ Вземи първото нещо за днес")) + "</button>";
       if (S.gate && S.gate.person === p) html += gateHTML(p);
       html += "</div></div>";
     });
 
     var items = [];
-    redCells().slice(0, 6).forEach(function (x) { items.push({ k: x.state === "late" ? "missed" : "due soon", cls: x.state === "late" ? "crit" : "warn", txt: clientName(x.o.client) + " · " + x.o.title, act: "go-cov", id: x.o.id }); });
-    S.intake.filter(function (i) { return !i.dispositionedAt && daysSince(i.arrivedAt) >= 3; }).slice(0, 4).forEach(function (i) { items.push({ k: daysSince(i.arrivedAt) + " d old", cls: "crit", txt: i.title, act: "view", id: "inbox" }); });
-    S.tasks.filter(function (t) { return t.status !== "done" && !t.someday && dayDiff(t.due) !== null && dayDiff(t.due) < 0 && mineOrFree(t); }).sort(sortTasks).slice(0, 6).forEach(function (t) { items.push({ k: Math.abs(dayDiff(t.due)) + " d late", cls: "crit", txt: t.title, act: "open-id", id: t.id }); });
-    S.tasks.filter(function (t) { return t.status !== "done" && isWaiting(t) && daysSince(t.touchedAt || t.updatedAt) >= 5; }).slice(0, 3).forEach(function (t) { items.push({ k: "waiting " + daysSince(t.touchedAt || t.updatedAt) + " d", cls: "wait", txt: t.title + (t.waitingOn ? " · " + t.waitingOn : ""), act: "open-id", id: t.id }); });
-    S.funding.forEach(function (f) { var rw = runwayDays(f); if (rw !== null && rw < 7) items.push({ k: rw + " d runway", cls: "crit", txt: f.name + " card", act: "view", id: "clients" }); });
-    html += '<div class="breaks"><h3><span class="dot' + (items.length ? "" : " ok") + '"></span>What breaks if nobody looks</h3>';
-    html += items.length ? "<ul>" + items.map(function (i) { return '<li><span class="k ' + i.cls + '">' + esc(i.k) + '</span><button type="button" data-act="' + i.act + '" data-id="' + esc(i.id) + '">' + esc(i.txt) + "</button></li>"; }).join("") + "</ul>" : '<div class="fine">Nothing is quietly failing right now.</div>';
+    redCells().slice(0, 6).forEach(function (x) { items.push({ k: x.state === "late" ? "изпуснато" : "наближава", cls: x.state === "late" ? "crit" : "warn", txt: clientName(x.o.client) + " · " + x.o.title, act: "go-cov", id: x.o.id }); });
+    S.intake.filter(function (i) { return !i.dispositionedAt && daysSince(i.arrivedAt) >= 3; }).slice(0, 4).forEach(function (i) { items.push({ k: "от " + daysSince(i.arrivedAt) + " дни", cls: "crit", txt: i.title, act: "view", id: "inbox" }); });
+    S.tasks.filter(function (t) { return t.status !== "done" && !t.someday && dayDiff(t.due) !== null && dayDiff(t.due) < 0 && mineOrFree(t); }).sort(sortTasks).slice(0, 6).forEach(function (t) { items.push({ k: "закъсняла с " + Math.abs(dayDiff(t.due)) + " д", cls: "crit", txt: t.title, act: "open-id", id: t.id }); });
+    S.tasks.filter(function (t) { return t.status !== "done" && isWaiting(t) && daysSince(t.touchedAt || t.updatedAt) >= 5; }).slice(0, 3).forEach(function (t) { items.push({ k: "чака от " + daysSince(t.touchedAt || t.updatedAt) + " дни", cls: "wait", txt: t.title + (t.waitingOn ? " · " + t.waitingOn : ""), act: "open-id", id: t.id }); });
+    S.funding.forEach(function (f) { var rw = runwayDays(f); if (rw !== null && rw < 7) items.push({ k: "стигат за " + rw + " дни", cls: "crit", txt: "картата " + f.name, act: "view", id: "clients" }); });
+    html += '<div class="breaks"><h3><span class="dot' + (items.length ? "" : " ok") + '"></span>Какво се чупи, ако никой не гледа</h3>';
+    html += items.length ? "<ul>" + items.map(function (i) { return '<li><span class="k ' + i.cls + '">' + esc(i.k) + '</span><button type="button" data-act="' + i.act + '" data-id="' + esc(i.id) + '">' + esc(i.txt) + "</button></li>"; }).join("") + "</ul>" : '<div class="fine">В момента нищо не се проваля тихомълком.</div>';
     html += "</div>";
 
     var unplanned = S.tasks.filter(function (t) { return t.status !== "done" && !t.someday && dayDiff(t.due) === 0 && mineOrFree(t) && !isWaiting(t) && !pickedByAnyone(t.id); });
-    html += section("Due today, not yet planned", unplanned, { plan: true, right: "a task enters Today only with a first step and a size" });
-    if (!(new Date().getDay() === 1 && !S.reviews[wk])) html += '<div class="section"><button type="button" class="btn" data-act="review">Review everything that is late</button></div>';
+    html += section("За днес, още непланирана", unplanned, { plan: true, right: "задача влиза в Днес само с първа стъпка и размер" });
+    if (!(new Date().getDay() === 1 && !S.reviews[wk])) html += '<div class="section"><button type="button" class="btn" data-act="review">Мини през всичко закъсняло</button></div>';
     return html;
   }
   function gateHTML(p) {
@@ -328,41 +360,41 @@
     if (t) {
       html += '<div class="h">Before this goes on today’s list</div><div class="of">' + esc(t.title) + "</div>" +
         '<div class="f"><label for="gFirst">First step · a verb, one line</label><input type="text" class="ctl" id="gFirst" maxlength="60" value="' + esc(g.first || "") + '" placeholder="Open the Metricool queue for Horizont" data-p="' + esc(p) + '" data-id="' + esc(t.id) + '"></div>' +
-        '<div class="f"><label>Size</label><div class="seg" id="gSize">' + [15, 60, 240].map(function (s) { return '<button type="button" data-act="gate-size" data-size="' + s + '" aria-pressed="' + (g.size === s ? "true" : "false") + '">' + SIZES[s] + "</button>"; }).join("") + "</div></div>" +
-        '<div class="acts" style="display:flex;gap:8px"><button type="button" class="btn primary sm" data-act="gate-ok" data-id="' + esc(t.id) + '" data-p="' + esc(p) + '">Add to today</button><button type="button" class="btn sm ghost" data-act="gate-cancel">Cancel</button></div>';
+        '<div class="f"><label>Колко време</label><div class="seg" id="gSize">' + [15, 60, 240].map(function (s) { return '<button type="button" data-act="gate-size" data-size="' + s + '" aria-pressed="' + (g.size === s ? "true" : "false") + '">' + SIZES[s] + "</button>"; }).join("") + "</div></div>" +
+        '<div class="acts" style="display:flex;gap:8px"><button type="button" class="btn primary sm" data-act="gate-ok" data-id="' + esc(t.id) + '" data-p="' + esc(p) + '">Вземи я за днес</button><button type="button" class="btn sm ghost" data-act="gate-cancel">Откажи</button></div>';
     } else {
       var c = candidatesFor(p);
       html += '<div class="h">Pick one for ' + esc(whoLabel(p)) + '</div><div class="cands">' + (c.length ? c.map(function (x) {
         return '<button type="button" class="cand" data-act="gate-pick" data-id="' + esc(x.t.id) + '" data-p="' + esc(p) + '">' + (x.t.priority ? '<span class="pri p' + x.t.priority + '"></span>' : "") + esc(x.t.title) + (x.t.client ? ' <span class="chip client">' + esc(clientName(x.t.client)) + "</span>" : "") + '<span class="why">' + esc(x.why) + "</span></button>";
       }).join("") : '<div class="empty">No open tasks for this person. Add one above.</div>') + "</div>" +
-        '<div><button type="button" class="btn sm ghost" data-act="gate-cancel">Cancel</button></div>';
+        '<div><button type="button" class="btn sm ghost" data-act="gate-cancel">Откажи</button></div>';
     }
     return html + "</div>";
   }
 
   function renderCoverage() {
     var mk = S.covMonth || monthKey(), cur = mk === monthKey(), kinds = kindsSorted();
-    var rows = S.clients.filter(function (c) { return c.active !== false; }).concat([{ id: "", name: "Cohera (internal)" }]);
+    var rows = S.clients.filter(function (c) { return c.active !== false; }).concat([{ id: "", name: "Cohera (вътрешно)" }]);
     var total = 0, done = 0, late = 0, skipped = 0;
     rows.forEach(function (c) { S.obligations.forEach(function (o) { if (o.client !== c.id || o.active === false || (S.me && o.owner !== S.me)) return; var st = cellState(o, mk); if (st === "na") return; total++; if (st === "done") done++; if (st === "skipped") skipped++; if (st === "late") late++; }); });
     var html = '<div class="cov-sum"><b class=tnum>' + done + " / " + total + "</b><span>closed in " + esc(monthLabel(+mk.slice(0, 4), +mk.slice(5, 7) - 1)) + (skipped ? " · " + skipped + " skipped" : "") + (late ? ' · <b style="font-size:16px;color:var(--crit)">' + late + " missed</b>" : "") + "</span>";
-    html += '<div class="seg" style="margin-left:8px"><button type="button" data-act="cov-prev">‹</button><button type="button" data-act="cov-now" aria-pressed="' + (cur ? "true" : "false") + '">This month</button><button type="button" data-act="cov-next">›</button></div>';
+    html += '<div class="seg" style="margin-left:8px"><button type="button" data-act="cov-prev">‹</button><button type="button" data-act="cov-now" aria-pressed="' + (cur ? "true" : "false") + '">Този месец</button><button type="button" data-act="cov-next">›</button></div>';
     html += '<button type="button" class="btn sm ghost" data-act="add-form" data-kind="obligation">+ Obligation</button>';
     html += '<div class="legend"><span><i class="o"></i>open</span><span><i class="w"></i>due soon</span><span><i class="r"></i>missed</span><span><i class="g"></i>done</span></div></div>';
     if (S.addForm === "obligation") html += addFormHTML("obligation");
-    html += '<div class="cov-wrap"><table class="cov"><thead><tr><th>Brand</th>' + kinds.map(function (k) { return "<th>" + esc(k) + "</th>"; }).join("") + "</tr></thead><tbody>";
+    html += '<div class="cov-wrap"><table class="cov"><thead><tr><th>Бранд</th>' + kinds.map(function (k) { return "<th>" + esc(kindBG(k)) + "</th>"; }).join("") + "</tr></thead><tbody>";
     rows.forEach(function (c) {
       var mine = S.obligations.filter(function (o) { return o.client === c.id && o.active !== false; });
       if (!mine.length) return;
       if (S.me && !mine.some(function (o) { return o.owner === S.me; })) return;
       var fade = c.id && c.lastTouchAt && daysSince(c.lastTouchAt) >= 14, miss = c.id ? missedMonths(c.id) : 0;
-      html += "<tr><th" + (fade ? ' class="faded"' : "") + ">" + esc(c.name || "Cohera") + (miss ? '<span class="miss" title="Missed obligations in past months">' + miss + " missed</span>" : "") + (c.lastTouchAt ? '<span class="sub">touched ' + daysSince(c.lastTouchAt) + " d ago" + (c.lastTouchBy ? " by " + esc(whoLabel(c.lastTouchBy)) : "") + "</span>" : "") + "</th>";
+      html += "<tr><th" + (fade ? ' class="faded"' : "") + ">" + esc(c.name || "Cohera") + (miss ? '<span class="miss" title="Изпуснати задължения от предишни месеци">' + miss + " missed</span>" : "") + (c.lastTouchAt ? '<span class="sub">touched ' + daysSince(c.lastTouchAt) + " d ago" + (c.lastTouchBy ? " by " + esc(whoLabel(c.lastTouchBy)) : "") + "</span>" : "") + "</th>";
       kinds.forEach(function (k) {
         var o = null; for (var i = 0; i < mine.length; i++) if (mine[i].kind === k) { o = mine[i]; break; }
         var st = o ? cellState(o, mk) : "na";
         if (!o || st === "na" || (S.me && o.owner !== S.me)) { html += '<td><div class="cell na"><span class="box"></span></div></td>'; return; }
         var ci = S.checkins[o.id + "_" + mk], when = ci && ci.at ? ci.at.slice(8, 10) + " " + MON[+ci.at.slice(5, 7) - 1] : "";
-        var label = st === "done" ? (whoLabel(ci.by) || "done") + (when ? " · " + when : "") : (st === "skipped" ? "skipped" : (st === "late" ? "missed" : (o.dueDay ? "by the " + ordinal(Math.min(o.dueDay, daysInMonth(mk))) : "open")));
+        var label = st === "done" ? (whoLabel(ci.by) || "готово") + (when ? " · " + when : "") : (st === "skipped" ? "пропуснато" : (st === "late" ? "изпуснато" : (o.dueDay ? "до " + Math.min(o.dueDay, daysInMonth(mk)) + "-то" : "отворено")));
         var sub = o.title && o.title !== k ? "<small>" + esc(o.title) + "</small>" : "";
         html += '<td><button type="button" class="cell ' + st + (S.highlight === o.id ? " hl" : "") + '" data-act="cov-cell" data-o="' + esc(o.id) + '" data-mk="' + esc(mk) + '" title="' + esc(o.title + (o.owner ? " · " + whoLabel(o.owner) : "")) + '"><span class="box">' + (st === "done" ? '<svg viewBox="0 0 12 12" width="9" height="9" fill="none"><path d="M1.5 6.3l3 3L10.5 2.7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>' : "") + '</span><span class="lines"><span>' + label + "</span>" + sub + "</span>" + (o.owner ? avatar(o.owner) : "") + "</button></td>";
       });
@@ -375,15 +407,15 @@
   }
   function addFormHTML(kind) {
     if (kind === "obligation") return '<form class="inline-form" id="addObl">' +
-      '<div class="f"><label>Brand</label><select class="ctl" name="client"><option value="">Cohera (internal)</option>' + S.clients.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>"; }).join("") + "</select></div>" +
-      '<div class="f"><label>Kind</label><input class="ctl" name="kind" list="kinds" placeholder="Posts scheduled" required><datalist id="kinds">' + KIND_ORDER.map(function (k) { return "<option>" + esc(k) + "</option>"; }).join("") + "</datalist></div>" +
-      '<div class="f"><label>What exactly</label><input class="ctl" name="title" placeholder="Posts scheduled 2 weeks ahead" required style="min-width:220px"></div>' +
-      '<div class="f"><label>Owner</label><select class="ctl" name="owner">' + PEOPLE.map(function (p) { return '<option value="' + esc(p) + '">' + esc(whoLabel(p)) + "</option>"; }).join("") + "</select></div>" +
-      '<div class="f"><label>Due day</label><input class="ctl n" name="dueDay" type="number" min="1" max="31" value="25"></div>' +
-      '<div class="f"><label>Warn day</label><input class="ctl n" name="warnDay" type="number" min="1" max="31" value="20"></div>' +
-      '<button type="submit" class="btn primary sm">Add</button><button type="button" class="btn sm ghost" data-act="add-form" data-kind="">Cancel</button></form>';
-    if (kind === "client") return '<form class="inline-form" id="addClient"><div class="f"><label>Brand name</label><input class="ctl" name="name" required placeholder="New client" style="min-width:220px"></div><div class="f"><label>Short names for quick add, comma separated</label><input class="ctl" name="aliases" placeholder="acme, акме"></div><button type="submit" class="btn primary sm">Add</button><button type="button" class="btn sm ghost" data-act="add-form" data-kind="">Cancel</button></form>';
-    if (kind === "funding") return '<form class="inline-form" id="addFund"><div class="f"><label>Ad account</label><input class="ctl" name="name" required placeholder="RO SHOP ads 1"></div><div class="f"><label>Brand</label><select class="ctl" name="client">' + S.clients.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>"; }).join("") + '</select></div><div class="f"><label>€ per day</label><input class="ctl n" name="dailyBurn" type="number" step="1" min="0"></div><div class="f"><label>€ on card</label><input class="ctl n" name="balance" type="number" step="1" min="0"></div><div class="f"><label>Card expiry</label><input class="ctl" name="cardExpiry" type="date"></div><button type="submit" class="btn primary sm">Add</button><button type="button" class="btn sm ghost" data-act="add-form" data-kind="">Cancel</button></form>';
+      '<div class="f"><label>Бранд</label><select class="ctl" name="client"><option value="">Cohera (internal)</option>' + S.clients.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>"; }).join("") + "</select></div>" +
+      '<div class="f"><label>Вид</label><input class="ctl" name="kind" list="kinds" placeholder="Posts scheduled" required><datalist id="kinds">' + KIND_ORDER.map(function (k) { return "<option>" + esc(k) + "</option>"; }).join("") + "</datalist></div>" +
+      '<div class="f"><label>Какво точно</label><input class="ctl" name="title" placeholder="Постовете са насрочени 2 седмици напред" required style="min-width:220px"></div>' +
+      '<div class="f"><label>Чия е</label><select class="ctl" name="owner">' + PEOPLE.map(function (p) { return '<option value="' + esc(p) + '">' + esc(whoLabel(p)) + "</option>"; }).join("") + "</select></div>" +
+      '<div class="f"><label>Ден от месеца</label><input class="ctl n" name="dueDay" type="number" min="1" max="31" value="25"></div>' +
+      '<div class="f"><label>Ден за предупреждение</label><input class="ctl n" name="warnDay" type="number" min="1" max="31" value="20"></div>' +
+      '<button type="submit" class="btn primary sm">Добави</button><button type="button" class="btn sm ghost" data-act="add-form" data-kind="">Откажи</button></form>';
+    if (kind === "client") return '<form class="inline-form" id="addClient"><div class="f"><label>Име на бранда</label><input class="ctl" name="name" required placeholder="Нов клиент" style="min-width:220px"></div><div class="f"><label>Short names for quick add, comma separated</label><input class="ctl" name="aliases" placeholder="acme, акме"></div><button type="submit" class="btn primary sm">Добави</button><button type="button" class="btn sm ghost" data-act="add-form" data-kind="">Откажи</button></form>';
+    if (kind === "funding") return '<form class="inline-form" id="addFund"><div class="f"><label>Рекламен акаунт</label><input class="ctl" name="name" required placeholder="RO SHOP ads 1"></div><div class="f"><label>Бранд</label><select class="ctl" name="client">' + S.clients.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>"; }).join("") + '</select></div><div class="f"><label>€ per day</label><input class="ctl n" name="dailyBurn" type="number" step="1" min="0"></div><div class="f"><label>€ on card</label><input class="ctl n" name="balance" type="number" step="1" min="0"></div><div class="f"><label>Картата изтича</label><input class="ctl" name="cardExpiry" type="date"></div><button type="submit" class="btn primary sm">Добави</button><button type="button" class="btn sm ghost" data-act="add-form" data-kind="">Откажи</button></form>';
     return "";
   }
 
@@ -395,24 +427,24 @@
       return mineOrFree(t);
     });
     var html = '<div class="controls" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px">' +
-      '<div class="seg" id="tv">' + [["week", "This week"], ["who", "By person"], ["client", "By client"], ["all", "All"]].map(function (v) { return '<button type="button" data-tv="' + v[0] + '" aria-pressed="' + (S.taskView === v[0] ? "true" : "false") + '">' + v[1] + "</button>"; }).join("") + "</div>" +
-      '<select class="ctl" id="fClient"><option value="">All clients</option>' + S.clients.map(function (c) { return '<option value="' + esc(c.id) + '"' + (S.fClient === c.id ? " selected" : "") + ">" + esc(c.name) + "</option>"; }).join("") + "</select>" +
-      '<button type="button" class="btn sm ghost" data-act="toggle-done" aria-pressed="' + S.showDone + '">' + (S.showDone ? "Hide done" : "Show done") + "</button>" +
-      '<button type="button" class="btn sm ghost" data-act="toggle-someday" aria-pressed="' + S.showSomeday + '">' + (S.showSomeday ? "Hide someday" : "Someday (" + S.tasks.filter(function (t) { return t.someday && t.status !== "done"; }).length + ")") + "</button></div>";
+      '<div class="seg" id="tv">' + [["week", "Тази седмица"], ["who", "По човек"], ["client", "По клиент"], ["all", "Всички"]].map(function (v) { return '<button type="button" data-tv="' + v[0] + '" aria-pressed="' + (S.taskView === v[0] ? "true" : "false") + '">' + v[1] + "</button>"; }).join("") + "</div>" +
+      '<select class="ctl" id="fClient"><option value="">Всички клиенти</option>' + S.clients.map(function (c) { return '<option value="' + esc(c.id) + '"' + (S.fClient === c.id ? " selected" : "") + ">" + esc(c.name) + "</option>"; }).join("") + "</select>" +
+      '<button type="button" class="btn sm ghost" data-act="toggle-done" aria-pressed="' + S.showDone + '">' + (S.showDone ? "Скрий готовите" : "Покажи готовите") + "</button>" +
+      '<button type="button" class="btn sm ghost" data-act="toggle-someday" aria-pressed="' + S.showSomeday + '">' + (S.showSomeday ? "Скрий „някой ден“" : "Someday (" + S.tasks.filter(function (t) { return t.someday && t.status !== "done"; }).length + ")") + "</button></div>";
     var waiting = list.filter(function (t) { return t.status !== "done" && isWaiting(t) && !t.someday; });
     var active = list.filter(function (t) { return !(t.status !== "done" && isWaiting(t)) && !t.someday; });
     var someday = list.filter(function (t) { return t.someday; });
     if (S.taskView === "week") {
       var g = { late: [], today: [], soon: [], later: [], nodate: [] };
       active.forEach(function (t) { var d = dayDiff(t.due); if (t.status === "done") return g.later.push(t); if (d === null) g.nodate.push(t); else if (d < 0) g.late.push(t); else if (d === 0) g.today.push(t); else if (d <= 7) g.soon.push(t); else g.later.push(t); });
-      html += section("Overdue", g.late) + section("Today", g.today) + section("Next 7 days", g.soon) + section("Later", g.later) + section("No date", g.nodate);
+      html += section("Просрочени", g.late) + section("Днес", g.today) + section("Следващите 7 дни", g.soon) + section("По-нататък", g.later) + section("Без дата", g.nodate);
     } else if (S.taskView === "who") {
       PEOPLE.concat([""]).forEach(function (p) { html += section(p ? whoLabel(p) : "Unassigned", active.filter(function (t) { return (t.assignee || "") === p; }), { noWho: true }); });
     } else if (S.taskView === "client") {
-      S.clients.map(function (c) { return c.id; }).concat([""]).forEach(function (id) { html += section(id ? clientName(id) : "Internal", active.filter(function (t) { return (t.client || "") === id; })); });
-    } else html += section("All tasks", active);
+      S.clients.map(function (c) { return c.id; }).concat([""]).forEach(function (id) { html += section(id ? clientName(id) : "Вътрешно", active.filter(function (t) { return (t.client || "") === id; })); });
+    } else html += section("Всички задачи", active);
     html += section("Waiting on someone else", waiting);
-    if (S.showSomeday) html += section("Someday · untouched for 30+ days", someday);
+    if (S.showSomeday) html += section("„Някой ден“ · недокоснати над 30 дни", someday);
     if (!active.length && !waiting.length) html += '<div class="empty">Nothing here. Add something in the bar above.</div>';
     return html;
   }
@@ -437,12 +469,12 @@
     html += '<div class="runway">';
     S.funding.slice().sort(function (a, b) { var ra = runwayDays(a), rb = runwayDays(b); return (ra == null ? 999 : ra) - (rb == null ? 999 : rb); }).forEach(function (f) {
       var rw = runwayDays(f), stale = daysSince(f.lastCheckedAt) === null || daysSince(f.lastCheckedAt) > 10;
-      html += '<div class="rw' + (stale ? " stale" : "") + '" data-act="fund" data-id="' + esc(f.id) + '" role="button" tabindex="0"><div class="n">' + esc(f.name) + '</div><b class="' + (rw !== null && rw < 7 ? "crit" : (rw !== null && rw < 14 ? "warn" : "")) + '">' + (rw === null ? "—" : rw + " d") + '</b><div class="s">' + (f.dailyBurn ? "burns " + Math.round(f.dailyBurn) + " €/day" : "no burn rate yet") + (f.balance != null ? " · " + Math.round(f.balance) + " € on " + (f.lastCheckedAt ? f.lastCheckedAt.slice(5, 10) : "?") : " · balance unknown") + "</div><div class=s>" + (f.lastCheckedAt ? "checked " + daysSince(f.lastCheckedAt) + " d ago" + (f.checkedBy ? " by " + esc(whoLabel(f.checkedBy)) : "") : "never checked") + "</div>";
-      if (S.fundEdit === f.id) html += '<form class="edit" id="fundForm" data-id="' + esc(f.id) + '"><input class="ctl n" name="balance" type="number" step="1" min="0" placeholder="€ on card" value="' + (f.balance != null ? esc(f.balance) : "") + '"><input class="ctl n" name="dailyBurn" type="number" step="1" min="0" placeholder="€/day" value="' + (f.dailyBurn != null ? esc(Math.round(f.dailyBurn)) : "") + '"><input class="ctl" name="cardExpiry" type="date" value="' + esc(f.cardExpiry || "") + '"><button type="submit" class="btn sm primary">Save</button><button type="button" class="btn sm ghost" data-act="fund-cancel">Cancel</button></form>';
+      html += '<div class="rw' + (stale ? " stale" : "") + '" data-act="fund" data-id="' + esc(f.id) + '" role="button" tabindex="0"><div class="n">' + esc(f.name) + '</div><b class="' + (rw !== null && rw < 7 ? "crit" : (rw !== null && rw < 14 ? "warn" : "")) + '">' + (rw === null ? "—" : rw + " дни") + '</b><div class="s">' + (f.dailyBurn ? "гори по " + Math.round(f.dailyBurn) + " €/ден" : "още няма дневен разход") + (f.balance != null ? " · " + Math.round(f.balance) + " € към " + (f.lastCheckedAt ? f.lastCheckedAt.slice(5, 10) : "?") : " · салдото не се знае") + "</div><div class=s>" + (f.lastCheckedAt ? "гледано преди " + daysSince(f.lastCheckedAt) + " дни" + (f.checkedBy ? " от " + esc(whoLabel(f.checkedBy)) : "") : "никога не е гледано") + "</div>";
+      if (S.fundEdit === f.id) html += '<form class="edit" id="fundForm" data-id="' + esc(f.id) + '"><input class="ctl n" name="balance" type="number" step="1" min="0" placeholder="€ on card" value="' + (f.balance != null ? esc(f.balance) : "") + '"><input class="ctl n" name="dailyBurn" type="number" step="1" min="0" placeholder="€/day" value="' + (f.dailyBurn != null ? esc(Math.round(f.dailyBurn)) : "") + '"><input class="ctl" name="cardExpiry" type="date" value="' + esc(f.cardExpiry || "") + '"><button type="submit" class="btn sm primary">Запази</button><button type="button" class="btn sm ghost" data-act="fund-cancel">Откажи</button></form>';
       html += "</div>";
     });
     html += "</div>";
-    html += '<div class="section-h" style="margin-top:22px">Brands<button type="button" class="btn sm ghost" data-act="add-form" data-kind="client" style="margin-left:8px">+ Brand</button></div>';
+    html += '<div class="section-h" style="margin-top:22px">Брандове<button type="button" class="btn sm ghost" data-act="add-form" data-kind="client" style="margin-left:8px">+ Brand</button></div>';
     if (S.addForm === "client") html += addFormHTML("client");
     html += '<div class="cards">';
     S.clients.filter(function (c) { return c.active !== false; }).forEach(function (c) {
@@ -451,24 +483,24 @@
       var next = open.filter(function (t) { return dayDiff(t.due) !== null && dayDiff(t.due) >= 0; }).sort(sortTasks)[0];
       var red = S.obligations.filter(function (o) { return o.client === c.id && o.active !== false && cellState(o, monthKey()) === "late"; }).length;
       var touch = daysSince(c.lastTouchAt), pulse = red || late ? "crit" : (touch !== null && touch >= 14 ? "warn" : (touch === null ? "idle" : "ok"));
-      html += '<div class="card" data-act="client" data-id="' + esc(c.id) + '" style="opacity:' + (touch !== null && touch >= 14 ? .65 : 1) + '"><h3><span class="pulse ' + pulse + '"></span>' + esc(c.name || c.id) + '<button type="button" class="btn sm ghost" data-act="touch" data-id="' + esc(c.id) + '" style="margin-left:auto" title="A call or a message counts">Touched today</button></h3><div class=kv>' +
-        "<span>Open</span><b>" + open.length + "</b><span>Overdue</span><b class=" + (late ? "crit" : "") + ">" + late + "</b>" +
-        "<span>Missed this month</span><b class=" + (red ? "crit" : "ok") + ">" + red + "</b>" +
-        "<span>Next due</span><b>" + (next ? esc(dueLabel(next.due)) : "—") + "</b>" +
-        "<span>Last touched</span><b class=" + (touch !== null && touch >= 14 ? "warn" : "") + ">" + (touch === null ? "never" : (touch === 0 ? "today" : touch + " d ago")) + (c.lastTouchBy ? " · " + esc(whoLabel(c.lastTouchBy)) : "") + "</b></div></div>";
+      html += '<div class="card" data-act="client" data-id="' + esc(c.id) + '" style="opacity:' + (touch !== null && touch >= 14 ? .65 : 1) + '"><h3><span class="pulse ' + pulse + '"></span>' + esc(c.name || c.id) + '<button type="button" class="btn sm ghost" data-act="touch" data-id="' + esc(c.id) + '" style="margin-left:auto" title="A call or a message counts">Пипната днес</button></h3><div class=kv>' +
+        "<span>Отвори</span><b>" + open.length + "</b><span>Просрочени</span><b class=" + (late ? "crit" : "") + ">" + late + "</b>" +
+        "<span>Изпуснато този месец</span><b class=" + (red ? "crit" : "ok") + ">" + red + "</b>" +
+        "<span>Следващ срок</span><b>" + (next ? esc(dueLabel(next.due)) : "—") + "</b>" +
+        "<span>Последно пипната</span><b class=" + (touch !== null && touch >= 14 ? "warn" : "") + ">" + (touch === null ? "never" : (touch === 0 ? "today" : touch + " d ago")) + (c.lastTouchBy ? " · " + esc(whoLabel(c.lastTouchBy)) : "") + "</b></div></div>";
     });
     return html + "</div>";
   }
 
   function renderInbox() {
     var open = S.intake.filter(function (i) { return !i.dispositionedAt; }).sort(function (a, b) { return a.arrivedAt < b.arrivedAt ? -1 : 1; });
-    var html = '<div class="in-add"><input type="text" class="ctl" id="inAdd" placeholder="Something arrived: an invoice, a client request, a brief. One line."><button type="button" class="btn primary" data-act="in-add">Add</button></div>';
+    var html = '<div class="in-add"><input type="text" class="ctl" id="inAdd" placeholder="Something arrived: an invoice, a client request, a brief. One line."><button type="button" class="btn primary" data-act="in-add">Добави</button></div>';
     html += '<div class="intake">' + (open.length ? open.map(function (i) {
       var age = daysSince(i.arrivedAt), cls = age >= 5 ? "crit" : (age >= 2 ? "warn" : "");
       return '<div class="in-row" data-id="' + esc(i.id) + '"><div class="age ' + cls + '">' + age + "<small>d</small></div><div><div class=t>" + esc(i.title) + "</div>" + (i.client ? '<div class="meta"><span class="chip client">' + esc(clientName(i.client)) + "</span></div>" : "") + "</div>" +
-        '<div class="acts"><button type="button" class="btn sm primary" data-act="in-now" data-id="' + esc(i.id) + '">Do now</button>' +
+        '<div class="acts"><button type="button" class="btn sm primary" data-act="in-now" data-id="' + esc(i.id) + '">Хващай сега</button>' +
         '<select class="ctl" data-act="in-give" data-id="' + esc(i.id) + '" style="padding:5px 8px;font-size:12.5px"><option value="">Give to…</option>' + PEOPLE.map(function (p) { return '<option value="' + esc(p) + '">' + esc(whoLabel(p)) + "</option>"; }).join("") + "</select>" +
-        '<button type="button" class="btn sm ghost" data-act="in-drop" data-id="' + esc(i.id) + '">Drop</button></div></div>';
+        '<button type="button" class="btn sm ghost" data-act="in-drop" data-id="' + esc(i.id) + '">Изтрий</button></div></div>';
     }).join("") : '<div class="empty">Inbox is empty. Things Claude finds in Gmail can land here too.</div>') + "</div>";
     return html;
   }
@@ -476,33 +508,33 @@
   function renderReview() {
     var r = S.review; if (!r) return "";
     var it = r.items[r.i];
-    if (!it) { var doc = { id: r.week, by: S.who || "", at: now(), count: r.items.length }; S.reviews[r.week] = doc; put("reviews", doc); S.review = null; toast("Review done. " + r.items.length + " things decided."); return renderToday(); }
+    if (!it) { var doc = { id: r.week, by: S.who || "", at: now(), count: r.items.length }; S.reviews[r.week] = doc; put("reviews", doc); S.review = null; toast("Прегледът приключи. " + r.items.length + " things decided."); return renderToday(); }
     var html = '<div class="review"><div class="prog">Review · ' + (r.i + 1) + " of " + r.items.length + "</div>";
     if (it.kind === "task") {
       var t = taskById(it.id); if (!t) { r.i++; return renderReview(); }
       html += "<h2>" + esc(t.title) + "</h2><div class=meta>" + chips(t, { due: true }) + "</div>" +
-        '<div class="acts"><button type="button" class="btn primary" data-act="rv-done">Done</button><button type="button" class="btn" data-act="rv-week">Move a week</button><button type="button" class="btn" data-act="rv-today">Today</button><button type="button" class="btn ghost" data-act="rv-someday">Someday</button><button type="button" class="btn ghost danger" data-act="rv-drop">Drop</button><button type="button" class="btn ghost" data-act="rv-skip">Skip</button></div>';
+        '<div class="acts"><button type="button" class="btn primary" data-act="rv-done">Готова</button><button type="button" class="btn" data-act="rv-week">Премести с седмица</button><button type="button" class="btn" data-act="rv-today">Днес</button><button type="button" class="btn ghost" data-act="rv-someday">Някой ден</button><button type="button" class="btn ghost danger" data-act="rv-drop">Изтрий</button><button type="button" class="btn ghost" data-act="rv-skip">Пропусни</button></div>';
     } else if (it.kind === "cell") {
       var o = oblById(it.id); if (!o) { r.i++; return renderReview(); }
-      html += "<h2>" + esc(clientName(o.client)) + " · " + esc(o.title) + '</h2><div class="of">' + (it.state === "late" ? "Missed this month" : "Due soon") + (o.owner ? " · " + esc(whoLabel(o.owner)) : "") + "</div>" +
-        '<div class="acts"><button type="button" class="btn primary" data-act="rv-check">It is done</button><button type="button" class="btn ghost" data-act="rv-skipcell">Skip this month</button><button type="button" class="btn ghost" data-act="rv-skip">Leave it</button></div>';
+      html += "<h2>" + esc(clientName(o.client)) + " · " + esc(o.title) + '</h2><div class="of">' + (it.state === "late" ? "Изпуснато този месец" : "Наближава") + (o.owner ? " · " + esc(whoLabel(o.owner)) : "") + "</div>" +
+        '<div class="acts"><button type="button" class="btn primary" data-act="rv-check">Готово е</button><button type="button" class="btn ghost" data-act="rv-skipcell">Пропусни този месец</button><button type="button" class="btn ghost" data-act="rv-skip">Остави я</button></div>';
     } else {
       var i = S.intake.filter(function (x) { return x.id === it.id; })[0]; if (!i || i.dispositionedAt) { r.i++; return renderReview(); }
       html += "<h2>" + esc(i.title) + '</h2><div class="of">In the inbox for ' + daysSince(i.arrivedAt) + " days</div>" +
-        '<div class="acts"><button type="button" class="btn primary" data-act="rv-innow">Do now</button>' + PEOPLE.map(function (p) { return '<button type="button" class="btn" data-act="rv-ingive" data-p="' + esc(p) + '">' + esc(whoLabel(p)) + "</button>"; }).join("") + '<button type="button" class="btn ghost danger" data-act="rv-indrop">Drop</button></div>';
+        '<div class="acts"><button type="button" class="btn primary" data-act="rv-innow">Хващай сега</button>' + PEOPLE.map(function (p) { return '<button type="button" class="btn" data-act="rv-ingive" data-p="' + esc(p) + '">' + esc(whoLabel(p)) + "</button>"; }).join("") + '<button type="button" class="btn ghost danger" data-act="rv-indrop">Изтрий</button></div>';
     }
-    return html + '<div style="margin-top:14px"><button type="button" class="btn sm ghost" data-act="rv-exit">Exit review</button></div></div>';
+    return html + '<div style="margin-top:14px"><button type="button" class="btn sm ghost" data-act="rv-exit">Излез от прегледа</button></div></div>';
   }
   function startReview() {
     var items = [];
     redCells().forEach(function (x) { items.push({ kind: "cell", id: x.o.id, state: x.state }); });
     S.intake.filter(function (i) { return !i.dispositionedAt && daysSince(i.arrivedAt) >= 3; }).forEach(function (i) { items.push({ kind: "intake", id: i.id }); });
     S.tasks.filter(function (t) { return t.status !== "done" && !t.someday && dayDiff(t.due) !== null && dayDiff(t.due) < 0 && mineOrFree(t); }).sort(sortTasks).forEach(function (t) { items.push({ kind: "task", id: t.id }); });
-    if (!items.length) { var doc = { id: weekKey(), by: S.who || "", at: now(), count: 0 }; S.reviews[doc.id] = doc; put("reviews", doc); toast("Nothing late, nothing missed, inbox is fresh. Short meeting."); render(); return; }
+    if (!items.length) { var doc = { id: weekKey(), by: S.who || "", at: now(), count: 0 }; S.reviews[doc.id] = doc; put("reviews", doc); toast("Нищо просрочено, нищо изпуснато, входящите са чисти. Кратка среща."); render(); return; }
     S.review = { items: items, i: 0, week: weekKey() }; render();
   }
 
-  var TITLES = { today: "Today", coverage: "Coverage", tasks: "Tasks", calendar: "Calendar", clients: "Clients", inbox: "Inbox" };
+  var TITLES = { today: "Днес", coverage: "Покритие", tasks: "Задачи", calendar: "Календар", clients: "Клиенти", inbox: "Входящи" };
   function typing() { var a = document.activeElement; return !!(a && viewEl.contains(a) && /^(input|textarea|select)$/i.test(a.tagName)); }
   function ready() { return S.loaded.tasks && S.loaded.obligations && S.loaded.checkins && S.loaded.picks && S.loaded.clients; }
   function render() {
@@ -519,7 +551,7 @@
     var red = redCells().filter(function (x) { return x.state === "late"; }).length;
     var inbox = S.intake.filter(function (i) { return !i.dispositionedAt; }).length;
     $("#b-today").textContent = late + red ? String(late + red) : ""; $("#b-cov").textContent = red ? String(red) : ""; $("#b-tasks").textContent = late ? String(late) : ""; $("#b-inbox").textContent = inbox ? String(inbox) : "";
-    var st = streakFor(S.who); $("#streak").innerHTML = "<b class=tnum>" + st + "</b><span>" + (st === 1 ? "day" : "days") + " in a row with something closed</span>";
+    var st = streakFor(S.who); $("#streak").innerHTML = "<b class=tnum>" + st + "</b><span>" + (st === 1 ? "ден" : "дни") + " подред с приключено нещо</span>";
     if (S.drawerId && !taskById(S.drawerId)) closeDrawer(); else if (S.drawerId) fillDrawer(taskById(S.drawerId), true);
   }
 
@@ -536,16 +568,16 @@
     if (idle($("#drWait"))) $("#drWait").value = t.waitingOn || "";
     if (idle($("#drDue"))) $("#drDue").value = t.due || "";
     $("#drTick").setAttribute("data-s", t.status);
-    $("#drStatusLabel").textContent = t.status === "todo" ? "To do" : (t.status === "doing" ? "In progress" : "Done");
-    if (idle($("#drClient"))) $("#drClient").innerHTML = '<option value="">Internal</option>' + S.clients.map(function (c) { return '<option value="' + esc(c.id) + '"' + (t.client === c.id ? " selected" : "") + ">" + esc(c.name) + "</option>"; }).join("");
-    if (idle($("#drWho"))) $("#drWho").innerHTML = '<option value="">Nobody yet</option>' + PEOPLE.map(function (p) { return '<option value="' + esc(p) + '"' + (t.assignee === p ? " selected" : "") + ">" + esc(whoLabel(p)) + "</option>"; }).join("");
+    $("#drStatusLabel").textContent = t.status === "todo" ? "За правене" : (t.status === "doing" ? "В ход" : "Готова");
+    if (idle($("#drClient"))) $("#drClient").innerHTML = '<option value="">Вътрешно</option>' + S.clients.map(function (c) { return '<option value="' + esc(c.id) + '"' + (t.client === c.id ? " selected" : "") + ">" + esc(c.name) + "</option>"; }).join("");
+    if (idle($("#drWho"))) $("#drWho").innerHTML = '<option value="">Още никой</option>' + PEOPLE.map(function (p) { return '<option value="' + esc(p) + '"' + (t.assignee === p ? " selected" : "") + ">" + esc(whoLabel(p)) + "</option>"; }).join("");
     $$("#drSize button").forEach(function (b) { b.setAttribute("aria-pressed", +b.getAttribute("data-size") === t.size ? "true" : "false"); });
     $$("#drPri button").forEach(function (b) { b.setAttribute("aria-pressed", +b.getAttribute("data-pri") === (t.priority || 0) ? "true" : "false"); });
-    $("#drDeps").innerHTML = (t.blockedBy || []).map(function (id) { var d = taskById(id); return d ? '<div class="dep' + (d.status === "done" ? " done" : "") + '"><span class="pri' + (d.status === "done" ? "" : " p1") + '"></span>' + esc(d.title) + '<button type="button" class="x" data-act="dep-rm" data-id="' + esc(id) + '" aria-label="Remove">×</button></div>' : ""; }).join("");
+    $("#drDeps").innerHTML = (t.blockedBy || []).map(function (id) { var d = taskById(id); return d ? '<div class="dep' + (d.status === "done" ? " done" : "") + '"><span class="pri' + (d.status === "done" ? "" : " p1") + '"></span>' + esc(d.title) + '<button type="button" class="x" data-act="dep-rm" data-id="' + esc(id) + '" aria-label="Махни">×</button></div>' : ""; }).join("");
     if (idle($("#drDepAdd"))) $("#drDepAdd").innerHTML = '<option value="">Add a task this one waits for…</option>' + S.tasks.filter(function (x) { return x.id !== t.id && x.status !== "done" && (t.blockedBy || []).indexOf(x.id) < 0; }).sort(sortTasks).slice(0, 60).map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.title) + "</option>"; }).join("");
-    $("#drLinks").innerHTML = (t.links || []).map(function (l, i) { return '<a class="chip link" href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label || linkKind(l.url)) + '<button type="button" class="x" data-act="link-rm" data-i="' + i + '" aria-label="Remove">×</button></a>'; }).join("");
-    $("#drStamp").textContent = (t.createdAt ? "created " + t.createdAt.slice(0, 10) : "") + (t.doneAt ? " · done " + t.doneAt.slice(0, 10) + (t.doneBy ? " by " + whoLabel(t.doneBy) : "") : "") + (t.updatedBy && !t.doneAt ? " · last edit " + whoLabel(t.updatedBy) : "") + (t.source === "claude" ? " · by Claude" : "");
-    $("#drSomeday").textContent = t.someday ? "Bring back" : "Someday";
+    $("#drLinks").innerHTML = (t.links || []).map(function (l, i) { return '<a class="chip link" href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label || linkKind(l.url)) + '<button type="button" class="x" data-act="link-rm" data-i="' + i + '" aria-label="Махни">×</button></a>'; }).join("");
+    $("#drStamp").textContent = (t.createdAt ? "създадена " + t.createdAt.slice(0, 10) : "") + (t.doneAt ? " · готова " + t.doneAt.slice(0, 10) + (t.doneBy ? " от " + whoLabel(t.doneBy) : "") : "") + (t.updatedBy && !t.doneAt ? " · последно пипната от " + whoLabel(t.updatedBy) : "") + (t.source === "claude" ? " · от Клод" : "");
+    $("#drSomeday").textContent = t.someday ? "Върни я" : "Някой ден";
   }
   function autosize(el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
   function drawerTask() { return S.drawerId ? taskById(S.drawerId) : null; }
@@ -569,7 +601,7 @@
     $("#drLinkIn").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addLink(); } });
     $("#drLinks").addEventListener("click", function (e) { var b = e.target.closest("[data-act=link-rm]"); var t = drawerTask(); if (!b || !t) return; e.preventDefault(); t.links.splice(+b.getAttribute("data-i"), 1); saveTask(t); });
     $("#drDelete").addEventListener("click", function () { var t = drawerTask(); if (t) deleteTask(t); });
-    $("#drSomeday").addEventListener("click", function () { var t = drawerTask(); if (!t) return; t.someday = !t.someday; t.somedayAt = t.someday ? now() : null; saveTask(t); toast(t.someday ? "Parked in Someday" : "Back on the board"); });
+    $("#drSomeday").addEventListener("click", function () { var t = drawerTask(); if (!t) return; t.someday = !t.someday; t.somedayAt = t.someday ? now() : null; saveTask(t); toast(t.someday ? "Отиде в „някой ден“" : "Пак е на борда"); });
     $("#drPick").addEventListener("click", function () { var t = drawerTask(); if (!t) return; var p = t.assignee || S.who || PEOPLE[0]; S.view = "today"; closeDrawer(); addPick(p, t); });
   }
 
@@ -627,7 +659,7 @@
       if (S.view === "inbox") { addIntake(r.title || v, r.client || ""); qa.value = ""; pv.innerHTML = ""; return; }
       var t = { id: uid(), title: r.title || v, client: r.client || "", assignee: r.assignee || S.me || "", due: r.due || null, size: snapSize(r.estimate), priority: r.priority || 0, status: "todo", createdAt: now(), createdBy: S.who || "", source: "board" };
       saveTask(t); qa.value = ""; pv.innerHTML = "";
-      toast("Added: " + t.title, "Open", function () { openDrawer(t.id); });
+      toast("Добавено: " + t.title, "Отвори", function () { openDrawer(t.id); });
     });
   }
 
@@ -646,10 +678,10 @@
     viewEl.addEventListener("submit", function (e) {
       var f = e.target; e.preventDefault();
       var d = {}; Array.prototype.forEach.call(f.elements, function (el) { if (el.name) d[el.name] = el.value; });
-      if (f.id === "addObl") { var o = { id: uid(), client: d.client || "", kind: d.kind.trim(), title: d.title.trim(), owner: d.owner, dueDay: +d.dueDay || null, warnDay: +d.warnDay || null, createdMonth: monthKey(), active: true, by: S.who || "" }; if (!o.kind || !o.title) return; S.obligations.push(o); put("obligations", o); S.addForm = null; render(); toast("Obligation added"); }
-      if (f.id === "addClient") { var name = d.name.trim(); if (!name) return; var id = name.toLowerCase().replace(/[^a-z0-9а-я]+/g, "-").replace(/^-|-$/g, "") || uid(); var c = { id: id, name: name, active: true, aliases: d.aliases.split(",").map(function (s) { return s.trim(); }).filter(Boolean), createdAt: now(), by: S.who || "" }; S.clients.push(c); put("clients", c); S.addForm = null; render(); toast("Brand added: " + name); }
+      if (f.id === "addObl") { var o = { id: uid(), client: d.client || "", kind: d.kind.trim(), title: d.title.trim(), owner: d.owner, dueDay: +d.dueDay || null, warnDay: +d.warnDay || null, createdMonth: monthKey(), active: true, by: S.who || "" }; if (!o.kind || !o.title) return; S.obligations.push(o); put("obligations", o); S.addForm = null; render(); toast("Добавено задължение"); }
+      if (f.id === "addClient") { var name = d.name.trim(); if (!name) return; var id = name.toLowerCase().replace(/[^a-z0-9а-я]+/g, "-").replace(/^-|-$/g, "") || uid(); var c = { id: id, name: name, active: true, aliases: d.aliases.split(",").map(function (s) { return s.trim(); }).filter(Boolean), createdAt: now(), by: S.who || "" }; S.clients.push(c); put("clients", c); S.addForm = null; render(); toast("Добавен бранд: " + name); }
       if (f.id === "addFund") { var fd = { id: uid(), name: d.name.trim(), client: d.client || "", dailyBurn: d.dailyBurn ? +d.dailyBurn : null, balance: d.balance ? +d.balance : null, cardExpiry: d.cardExpiry || null, lastCheckedAt: now(), checkedBy: S.who || "" }; if (!fd.name) return; S.funding.push(fd); put("funding", fd); S.addForm = null; render(); }
-      if (f.id === "fundForm") { var ff = S.funding.filter(function (x) { return x.id === f.getAttribute("data-id"); })[0]; if (!ff) return; ff.balance = d.balance === "" ? null : +d.balance; ff.dailyBurn = d.dailyBurn === "" ? null : +d.dailyBurn; ff.cardExpiry = d.cardExpiry || null; ff.lastCheckedAt = now(); ff.checkedBy = S.who || ""; put("funding", ff); S.fundEdit = null; render(); toast("Card updated"); }
+      if (f.id === "fundForm") { var ff = S.funding.filter(function (x) { return x.id === f.getAttribute("data-id"); })[0]; if (!ff) return; ff.balance = d.balance === "" ? null : +d.balance; ff.dailyBurn = d.dailyBurn === "" ? null : +d.dailyBurn; ff.cardExpiry = d.cardExpiry || null; ff.lastCheckedAt = now(); ff.checkedBy = S.who || ""; put("funding", ff); S.fundEdit = null; render(); toast("Картата е обновена"); }
     });
 
     viewEl.addEventListener("click", function (e) {
@@ -661,6 +693,7 @@
       if (act === "open-id") { openDrawer(id); return; }
       if (act === "done-id") { t = taskById(id); if (t) markDone(t); return; }
       if (act === "start") { t = taskById(id); if (t) startFocus(t); return; }
+      if (act === "grab") { grabNow(e.target.closest("[data-p]").getAttribute("data-p")); return; }
       if (act === "unpick") { removePick(p, id); return; }
       if (act === "carry") { t = taskById(id); if (t) addPick(p, t); return; }
       if (act === "plan") { e.stopPropagation(); t = taskById(id); if (t) addPick(t.assignee || S.who || S.me || PEOPLE[0], t); return; }
@@ -673,7 +706,7 @@
       if (act === "go-cov") { S.view = "coverage"; S.covMonth = null; S.highlight = id; render(); var c = $(".cell.hl"); if (c) c.scrollIntoView({ block: "center", inline: "center" }); return; }
       if (act === "review") { startReview(); return; }
       if (act === "add-form") { S.addForm = el.getAttribute("data-kind") || null; render(); return; }
-      if (act === "touch") { e.stopPropagation(); touchClient(id); render(); toast("Marked as touched today"); return; }
+      if (act === "touch") { e.stopPropagation(); touchClient(id); render(); toast("Отбелязана като пипната днес"); return; }
       if (act === "cov-cell") { var o = oblById(el.getAttribute("data-o")), mk = el.getAttribute("data-mk"); if (!o) return; if (S.checkins[o.id + "_" + mk]) uncheck(o, mk); else checkin(o, mk); return; }
       if (act === "cov-prev" || act === "cov-next" || act === "cov-now") { var mk2 = S.covMonth || monthKey(), y = +mk2.slice(0, 4), m = +mk2.slice(5, 7) - 1; if (act === "cov-now") S.covMonth = null; else { m += act === "cov-next" ? 1 : -1; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } S.covMonth = y + "-" + String(m + 1).padStart(2, "0"); } render(); return; }
       if (act === "cal-prev" || act === "cal-next" || act === "cal-today") { var c2 = S.cal; if (act === "cal-today") S.cal = null; else { c2.m += act === "cal-next" ? 1 : -1; if (c2.m < 0) { c2.m = 11; c2.y--; } if (c2.m > 11) { c2.m = 0; c2.y++; } } render(); return; }
@@ -685,7 +718,7 @@
       if (act === "in-add") { var v = $("#inAdd").value.trim(); if (!v) return; var r = parse(v); addIntake(r.title || v, r.client || ""); return; }
       var it = S.intake.filter(function (x) { return x.id === id; })[0];
       if (act === "in-now" && it) { disposeIntake(it, S.who || "", true); return; }
-      if (act === "in-drop" && it) { disposeIntake(it, "drop", false); toast("Dropped: " + it.title); return; }
+      if (act === "in-drop" && it) { disposeIntake(it, "drop", false); toast("Изтрито: " + it.title); return; }
       var r0 = S.review, cur = r0 && r0.items[r0.i];
       if (act.indexOf("rv-") === 0 && r0) {
         if (act === "rv-exit") { S.review = null; render(); return; }
@@ -722,8 +755,8 @@
   function gateOk(id, p) {
     var t = taskById(id); if (!t || !S.gate) return;
     var fs = ($("#gFirst") ? $("#gFirst").value : S.gate.first || "").trim(), sz = S.gate.size;
-    if (!fs) { toast("Write the first step. One verb."); if ($("#gFirst")) $("#gFirst").focus(); return; }
-    if (!sz) { toast("Pick a size."); return; }
+    if (!fs) { toast("Напиши първата стъпка. Един глагол."); if ($("#gFirst")) $("#gFirst").focus(); return; }
+    if (!sz) { toast("Избери колко време ще отнеме."); return; }
     t.firstStep = fs; t.size = sz; saveTask(t, true); S.gate = null; addPick(p, t);
   }
   function setWho(w) {

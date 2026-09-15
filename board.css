@@ -484,3 +484,124 @@ textarea.ctl{width:100%;min-height:84px;resize:vertical;line-height:1.5}
   .f-row{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ================= едър режим =================
+   Бордът беше писан ситно, 14.5px основен шрифт и 24px кутийки за чеклване.
+   Един множител „--u" вдига целия интерфейс наведнъж. Стойността идва от
+   data-density на <html> и се помни в браузъра. Едър е по подразбиране,
+   защото това е борд, който се гледа отдалеч, докато вършиш нещо друго. */
+:root{--u:1.18}
+:root[data-density="normalen"]{--u:1}
+:root[data-density="edar"]{--u:1.18}
+:root[data-density="ogromen"]{--u:1.36}
+
+:root{--rail:calc(212px * var(--u)); --drawer:calc(400px * var(--u))}
+body{font-size:calc(14.5px * var(--u))}
+
+.brand b{font-size:calc(17px * var(--u))}
+.brand svg{width:calc(24px * var(--u));height:calc(24px * var(--u))}
+.nav button{padding:calc(9px * var(--u)) calc(10px * var(--u));border-radius:calc(9px * var(--u))}
+.nav button kbd{font-size:calc(11px * var(--u));padding:calc(2px * var(--u)) calc(5px * var(--u))}
+.nav .badge{font-size:calc(11.5px * var(--u));min-width:calc(20px * var(--u))}
+.rail-foot{font-size:calc(12.5px * var(--u))}
+
+.top h1{font-size:calc(22px * var(--u))}
+.top .date{font-size:calc(13.5px * var(--u))}
+.btn{padding:calc(8px * var(--u)) calc(13px * var(--u));font-size:calc(13.5px * var(--u));border-radius:calc(9px * var(--u))}
+.chip{font-size:calc(11.5px * var(--u));padding:calc(2px * var(--u)) calc(8px * var(--u))}
+
+/* Редът е основната единица на борда. Той трябва да е удобен за мишка и за око. */
+.row{grid-template-columns:calc(24px * var(--u)) 1fr auto;gap:calc(12px * var(--u));
+     padding:calc(10px * var(--u)) calc(12px * var(--u)) calc(10px * var(--u)) calc(10px * var(--u))}
+.tick{width:calc(24px * var(--u));height:calc(24px * var(--u))}
+.tick svg{width:calc(11px * var(--u));height:calc(11px * var(--u))}
+.due{font-size:calc(12.5px * var(--u))}
+.empty{font-size:calc(14px * var(--u));padding:calc(26px * var(--u)) calc(12px * var(--u))}
+
+.focus{padding:calc(22px * var(--u)) calc(24px * var(--u))}
+.focus h2{font-size:calc(26px * var(--u))}
+.focus .why{font-size:calc(13.5px * var(--u))}
+.focus .eyebrow{font-size:calc(11.5px * var(--u))}
+.focus .acts{min-width:calc(150px * var(--u))}
+
+.bud{padding:calc(12px * var(--u)) calc(14px * var(--u))}
+.bud .who{font-size:calc(13.5px * var(--u))}
+.bud .bar{height:calc(8px * var(--u))}
+.bud .nums{font-size:calc(12.5px * var(--u))}
+
+.breaks h3{font-size:calc(13px * var(--u));padding:calc(11px * var(--u)) calc(14px * var(--u))}
+.breaks li{font-size:calc(13.5px * var(--u));padding:calc(7px * var(--u)) calc(14px * var(--u))}
+.breaks li .k{font-size:calc(11px * var(--u));min-width:calc(74px * var(--u))}
+.breaks .fine{font-size:calc(13.5px * var(--u))}
+
+.cal-title{font-size:calc(19px * var(--u))}
+.cal-day{min-height:calc(104px * var(--u))}
+.cal-date{font-size:calc(12.5px * var(--u));width:calc(24px * var(--u));height:calc(24px * var(--u))}
+.cal-pill{font-size:calc(11.5px * var(--u));padding:calc(2px * var(--u)) calc(7px * var(--u))}
+.cal-dow{font-size:calc(11.5px * var(--u))}
+
+.list-h h3{font-size:calc(15px * var(--u))}
+.list-h .sub{font-size:calc(12.5px * var(--u))}
+.list-add input{font-size:calc(13.5px * var(--u))}
+.card{padding:calc(14px * var(--u)) calc(16px * var(--u))}
+.card h3{font-size:calc(15.5px * var(--u))}
+.card .kv{font-size:calc(13px * var(--u))}
+
+.dr-title{font-size:calc(21px * var(--u))}
+.f label{font-size:calc(11px * var(--u))}
+.dep{font-size:calc(13px * var(--u))}
+.dr-foot{font-size:calc(12.5px * var(--u))}
+.toast{font-size:calc(13.5px * var(--u));padding:calc(10px * var(--u)) calc(14px * var(--u))}
+.review h2{font-size:calc(24px * var(--u))}
+.cov{font-size:calc(13px * var(--u))}
+.qa input{font-size:calc(15px * var(--u));padding:calc(11px * var(--u)) calc(14px * var(--u)) calc(11px * var(--u)) calc(40px * var(--u))}
+.qa .icon{left:calc(13px * var(--u))}
+select.ctl,input.ctl,textarea.ctl{font-size:calc(13.5px * var(--u));padding:calc(7px * var(--u)) calc(10px * var(--u))}
+.seg button{font-size:calc(13px * var(--u));padding:calc(5px * var(--u)) calc(11px * var(--u))}
+.fo-in h2{font-size:calc(34px * var(--u))}
+.fo-step{font-size:calc(18px * var(--u))}
+.fo-timer{font-size:calc(96px * var(--u))}
+.wg-in h2{font-size:calc(32px * var(--u))}
+.wg-acts .btn{padding:calc(12px * var(--u)) calc(22px * var(--u));font-size:calc(15px * var(--u))}
+.carry .item{font-size:calc(13.5px * var(--u))}
+.banner b{font-size:calc(16px * var(--u))}
+.cell{height:calc(52px * var(--u))}
+.pick{padding:calc(16px * var(--u)) calc(18px * var(--u))}
+
+/* Телефонът има свои правила и те трябва да останат последни,
+   иначе едрият режим връща двуколонния ред на малък екран. */
+@media (max-width:820px){
+  .row{grid-template-columns:calc(24px * var(--u)) 1fr;row-gap:calc(6px * var(--u))}
+  .nav button{flex-direction:column;gap:3px;padding:calc(6px * var(--u)) calc(4px * var(--u));font-size:calc(11px * var(--u))}
+  .cal-day{min-height:calc(72px * var(--u));padding:calc(4px * var(--u))}
+  .cal-pill{font-size:calc(10.5px * var(--u));padding:calc(1px * var(--u)) calc(5px * var(--u))}
+}
+
+/* превключвателят за размер в лентата отляво */
+.dens{display:flex;gap:4px;align-items:center}
+.dens button{
+  flex:1;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  border-radius:8px;padding:calc(5px * var(--u)) 0;font-size:calc(12px * var(--u));font-weight:600;
+}
+.dens button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent)}
+.dens button:hover{border-color:var(--accent)}
+
+/* „Хващай нещо сега" · най-голямото нещо на екрана.
+   Стои най-отгоре в Днес, защото при ADHD изборът е по-скъп от работата. */
+.grab{
+  display:block;width:100%;text-align:left;margin:0 0 16px;
+  background:var(--accent);color:var(--ground);border:0;border-radius:var(--r-lg);
+  padding:calc(18px * var(--u)) calc(22px * var(--u));box-shadow:var(--shadow);
+  transition:filter .12s,transform .06s;
+}
+.grab:hover{filter:brightness(1.08)}
+.grab:active{transform:translateY(1px)}
+.grab-k{
+  display:block;font-size:calc(12px * var(--u));letter-spacing:.11em;text-transform:uppercase;
+  font-weight:700;opacity:.82;
+}
+.grab-t{
+  display:block;font-family:"Bricolage Grotesque",sans-serif;font-weight:700;line-height:1.2;
+  font-size:calc(27px * var(--u));margin-top:calc(6px * var(--u));
+}
+@media (max-width:820px){ .grab-t{font-size:calc(21px * var(--u))} }

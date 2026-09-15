@@ -1,10 +1,19 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cohera Board</title>
+<html lang="bg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Бордът на Cohera</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
-<link rel="stylesheet" href="board.css"></head><body>
+<link rel="stylesheet" href="board.css">
+<script>
+/* Размерът се слага преди първото рисуване, за да не мига от ситно към едро. */
+(function () {
+  var d = "edar";
+  try { d = localStorage.getItem("board.density") || "edar"; } catch (e) {}
+  document.documentElement.setAttribute("data-density", d);
+})();
+</script>
+</head><body>
 
 <div class="shell">
   <aside class="rail">
@@ -16,15 +25,20 @@
       </svg>
       <b>Cohera Board</b>
     </div>
-    <nav class="nav" id="nav" aria-label="Views">
-      <button type="button" data-view="today" aria-current="page">Today <span class="badge" id="b-today"></span><kbd>1</kbd></button>
-      <button type="button" data-view="coverage">Coverage <span class="badge" id="b-cov"></span><kbd>2</kbd></button>
-      <button type="button" data-view="tasks">Tasks <span class="badge" id="b-tasks"></span><kbd>3</kbd></button>
-      <button type="button" data-view="calendar">Calendar<kbd>4</kbd></button>
-      <button type="button" data-view="clients">Clients<kbd>5</kbd></button>
-      <button type="button" data-view="inbox">Inbox <span class="badge" id="b-inbox"></span><kbd>6</kbd></button>
+    <nav class="nav" id="nav" aria-label="Изгледи">
+      <button type="button" data-view="today" aria-current="page">Днес <span class="badge" id="b-today"></span><kbd>1</kbd></button>
+      <button type="button" data-view="coverage">Покритие <span class="badge" id="b-cov"></span><kbd>2</kbd></button>
+      <button type="button" data-view="tasks">Задачи <span class="badge" id="b-tasks"></span><kbd>3</kbd></button>
+      <button type="button" data-view="calendar">Календар<kbd>4</kbd></button>
+      <button type="button" data-view="clients">Клиенти<kbd>5</kbd></button>
+      <button type="button" data-view="inbox">Входящи <span class="badge" id="b-inbox"></span><kbd>6</kbd></button>
     </nav>
     <div class="rail-foot">
+      <div class="dens" id="dens" role="group" aria-label="Размер на интерфейса">
+        <button type="button" data-d="normalen" title="Нормален">A</button>
+        <button type="button" data-d="edar" title="Едър">A</button>
+        <button type="button" data-d="ogromen" title="Огромен">A</button>
+      </div>
       <div class="streak" id="streak"></div>
       <div class="you" id="you"></div>
       <span id="sync" class="tnum"></span>
@@ -35,84 +49,84 @@
     <div class="top">
       <h1 id="viewTitle">Today</h1>
       <span class="date tnum" id="today"></span>
-      <label for="me" class="sr">Show</label>
-      <select id="me" class="ctl" aria-label="Show">
-        <option value="">Everyone</option>
-        <option value="Яни">Yani</option>
-        <option value="Кънчо">Kancho</option>
-        <option value="Еви">Evi</option>
+      <label for="me" class="sr">Покажи</label>
+      <select id="me" class="ctl" aria-label="Покажи">
+        <option value="">Всички</option>
+        <option value="Яни">Яни</option>
+        <option value="Кънчо">Кънчо</option>
+        <option value="Еви">Еви</option>
       </select>
       <div class="grow qa">
         <span class="icon" aria-hidden="true">+</span>
-        <input type="text" id="qa" placeholder="Add anything: “tomorrow Kancho Patricia report 30m !”  ·  press N" autocomplete="off">
+        <input type="text" id="qa" placeholder="Пиши каквото се сетиш: „утре Кънчо Патриция отчет 30м !“   ·   клавиш N" autocomplete="off">
         <div class="qa-preview" id="qaPreview"></div>
       </div>
     </div>
-    <div id="view"><div class="state">Connecting…</div></div>
+    <div id="view"><div class="state">Свързвам се…</div></div>
   </main>
 </div>
 
 <div class="scrim" id="scrim"></div>
-<aside class="drawer" id="drawer" aria-label="Task details" aria-hidden="true">
+<aside class="drawer" id="drawer" aria-label="Подробности по задачата" aria-hidden="true">
   <div class="dr-h">
-    <button type="button" class="tick" id="drTick" data-s="todo" aria-label="Change status">
+    <button type="button" class="tick" id="drTick" data-s="todo" aria-label="Смени статуса">
       <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 6.3l3 3L10.5 2.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <span id="drStatusLabel" class="chip"></span>
     <span class="spacer"></span>
-    <button type="button" class="btn sm" id="drPick">Pick for today</button>
-    <button type="button" class="btn sm ghost" id="drClose" aria-label="Close">Esc</button>
+    <button type="button" class="btn sm" id="drPick">Вземи я за днес</button>
+    <button type="button" class="btn sm ghost" id="drClose" aria-label="Затвори">Esc</button>
   </div>
   <div class="dr-body">
-    <textarea class="dr-title" id="drTitle" rows="1" aria-label="Title"></textarea>
+    <textarea class="dr-title" id="drTitle" rows="1" aria-label="Заглавие"></textarea>
     <div class="f">
-      <label for="drFirst">First step · imperative verb, one line</label>
-      <input type="text" class="ctl" id="drFirst" placeholder="Open the Metricool queue for Horizont" maxlength="60">
+      <label for="drFirst">Първата стъпка · глагол в повелително, един ред</label>
+      <input type="text" class="ctl" id="drFirst" placeholder="Отвори опашката в Metricool за Хоризонт" maxlength="60">
     </div>
     <div class="f-row">
-      <div class="f"><label for="drClient">Client</label><select class="ctl" id="drClient"></select></div>
-      <div class="f"><label for="drWho">Owner</label><select class="ctl" id="drWho"></select></div>
+      <div class="f"><label for="drClient">Клиент</label><select class="ctl" id="drClient"></select></div>
+      <div class="f"><label for="drWho">Чия е</label><select class="ctl" id="drWho"></select></div>
     </div>
     <div class="f-row">
-      <div class="f"><label for="drDue">Due</label><input type="date" class="ctl" id="drDue"></div>
-      <div class="f"><label>Size</label>
-        <div class="seg" id="drSize"><button type="button" data-size="15">15 min</button><button type="button" data-size="60">1 h</button><button type="button" data-size="240">Half day</button></div>
+      <div class="f"><label for="drDue">За кога</label><input type="date" class="ctl" id="drDue"></div>
+      <div class="f"><label>Колко време</label>
+        <div class="seg" id="drSize"><button type="button" data-size="15">15 мин</button><button type="button" data-size="60">1 час</button><button type="button" data-size="240">Половин ден</button></div>
       </div>
     </div>
-    <div class="f"><label>Urgency</label>
-      <div class="seg pri-seg" id="drPri"><button type="button" data-pri="0">Normal</button><button type="button" data-pri="1"><span class="pri p1"></span>Important</button><button type="button" data-pri="2"><span class="pri p2"></span>Urgent</button></div>
+    <div class="f"><label>Спешност</label>
+      <div class="seg pri-seg" id="drPri"><button type="button" data-pri="0">Нормална</button><button type="button" data-pri="1"><span class="pri p1"></span>Важна</button><button type="button" data-pri="2"><span class="pri p2"></span>Спешна</button></div>
     </div>
-    <div class="f"><label for="drWait">Waiting on · leave empty when nothing blocks it</label>
-      <input type="text" class="ctl" id="drWait" placeholder="Client reply, designer files, Meta review…">
+    <div class="f"><label for="drWait">Чака се · остави празно, ако нищо не я държи</label>
+      <input type="text" class="ctl" id="drWait" placeholder="Отговор от клиента, файлове от дизайнера, ревю от Meta…">
     </div>
-    <div class="f"><label>Blocked by</label>
+    <div class="f"><label>Държи се от</label>
       <div class="deps" id="drDeps"></div>
-      <select class="ctl" id="drDepAdd"><option value="">Add a task this one waits for…</option></select>
+      <select class="ctl" id="drDepAdd"><option value="">Добави задача, която трябва да мине първа…</option></select>
     </div>
-    <div class="f"><label>Links</label>
+    <div class="f"><label>Линкове</label>
       <div class="links" id="drLinks"></div>
-      <div class="links-add"><input type="text" class="ctl" id="drLinkIn" placeholder="Paste a Drive, Metricool or Ads Manager link"><button type="button" class="btn sm" id="drLinkBtn">Add</button></div>
+      <div class="links-add"><input type="text" class="ctl" id="drLinkIn" placeholder="Пусни линк към Drive, Metricool или Ads Manager"><button type="button" class="btn sm" id="drLinkBtn">Добави</button></div>
     </div>
-    <div class="f"><label for="drNotes">Notes</label><textarea class="ctl" id="drNotes" placeholder="Anything the next person needs to know"></textarea></div>
+    <div class="f"><label for="drNotes">Бележки</label><textarea class="ctl" id="drNotes" placeholder="Каквото следващият трябва да знае"></textarea></div>
   </div>
   <div class="dr-foot">
     <span id="drStamp"></span>
     <span class="spacer"></span>
-    <button type="button" class="btn sm ghost" id="drSomeday">Someday</button>
-    <button type="button" class="btn sm ghost danger" id="drDelete">Delete</button>
+    <button type="button" class="btn sm ghost" id="drSomeday">Някой ден</button>
+    <button type="button" class="btn sm ghost danger" id="drDelete">Изтрий</button>
   </div>
 </aside>
 
 <div class="focus-overlay" id="focusOverlay" hidden>
   <div class="fo-in">
-    <div class="eyebrow">Doing now</div>
+    <div class="eyebrow">В момента</div>
     <h2 id="foTitle"></h2>
     <p class="fo-step" id="foStep"></p>
     <div class="fo-timer tnum" id="foTimer">15:00</div>
     <div class="fo-acts">
-      <button type="button" class="btn primary" id="foDone">Done</button>
-      <button type="button" class="btn" id="foMore">5 more minutes</button>
-      <button type="button" class="btn ghost" id="foStop">Stop</button>
+      <button type="button" class="btn primary" id="foDone">Готова</button>
+      <button type="button" class="btn" id="foMore">Още 5 минути</button>
+      <button type="button" class="btn ghost" id="foStop">Спри</button>
     </div>
   </div>
 </div>
@@ -120,12 +134,12 @@
 <div class="who-gate" id="whoGate" hidden>
   <div class="wg-in">
     <div class="eyebrow">Cohera Board</div>
-    <h2>Who is looking?</h2>
-    <p>Everything you tick or write is signed with this. Change it any time from the sidebar.</p>
+    <h2>Кой гледа?</h2>
+    <p>Всичко, което чекнеш или напишеш, се подписва с това име. Сменя се по всяко време отляво.</p>
     <div class="wg-acts">
-      <button type="button" class="btn primary" data-who="Яни">Yani</button>
-      <button type="button" class="btn primary" data-who="Кънчо">Kancho</button>
-      <button type="button" class="btn primary" data-who="Еви">Evi</button>
+      <button type="button" class="btn primary" data-who="Яни">Яни</button>
+      <button type="button" class="btn primary" data-who="Кънчо">Кънчо</button>
+      <button type="button" class="btn primary" data-who="Еви">Еви</button>
     </div>
   </div>
 </div>
@@ -135,12 +149,12 @@
 <div class="who-gate" id="login" hidden>
   <div class="wg-in">
     <div class="eyebrow">Cohera Board</div>
-    <h2>Sign in</h2>
-    <p>Your work email. You get a link, the link signs you in on this device. Only the team list gets through.</p>
-    <form><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><input type="email" class="ctl" placeholder="name@coheradigital.com" required style="min-width:260px"><button type="submit" class="btn primary">Send the link</button></div><p class="msg" style="min-height:1.4em"></p></form>
+    <h2>Влизане</h2>
+    <p>Служебният ти имейл. Идва линк, линкът те пуска на това устройство. Минават само хората от екипа.</p>
+    <form><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><input type="email" class="ctl" placeholder="name@coheradigital.com" required style="min-width:260px"><button type="submit" class="btn primary">Прати линка</button></div><p class="msg" style="min-height:1.4em"></p></form>
   </div>
 </div>
-<button type="button" class="btn sm ghost" onclick="window.boardSignOut&&window.boardSignOut()" style="position:fixed;left:12px;bottom:10px;z-index:35;opacity:.7">Sign out</button>
+<button type="button" class="btn sm ghost" onclick="window.boardSignOut&&window.boardSignOut()" style="position:fixed;left:12px;bottom:10px;z-index:35;opacity:.7">Излез</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
@@ -148,5 +162,33 @@
 <script src="parser.js"></script>
 <script src="calendar.js"></script>
 <script src="app.js"></script>
+
+<script>
+/* Трите „А" отляво сменят размера на целия борд. Изборът остава в браузъра,
+   защото е лична настройка, не екипна. */
+(function () {
+  var box = document.getElementById("dens");
+  if (!box) return;
+  var sizes = { normalen: 12, edar: 15, ogromen: 19 };
+  function paint() {
+    var now = document.documentElement.getAttribute("data-density") || "edar";
+    var bs = box.querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) {
+      var d = bs[i].getAttribute("data-d");
+      bs[i].setAttribute("aria-pressed", d === now ? "true" : "false");
+      bs[i].style.fontSize = sizes[d] + "px";
+    }
+  }
+  box.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-d]");
+    if (!b) return;
+    var d = b.getAttribute("data-d");
+    document.documentElement.setAttribute("data-density", d);
+    try { localStorage.setItem("board.density", d); } catch (err) {}
+    paint();
+  });
+  paint();
+})();
+</script>
 
 </body></html>

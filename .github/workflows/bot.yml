@@ -1,0 +1,52 @@
+name: Телеграм бот на борда
+
+# Пуска се само по часовник и на ръка. Никога от push или pull request,
+# за да не може чужд код в чуждо разклонение да стигне до тайните.
+on:
+  schedule:
+    - cron: "0 5 * * 1-5"              # 08:00 лятно време: какво имаш за днес
+    - cron: "0 15 * * 1-5"             # 18:00: какво стана днес
+    - cron: "5 6-14,16-19 * * *"       # всеки час: прибира отговорите и новите неща
+  workflow_dispatch:
+    inputs:
+      what:
+        description: "sutrin, vecher или chetene"
+        type: choice
+        default: chetene
+        options: [chetene, sutrin, vecher]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: board-bot
+  cancel-in-progress: false
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Бутане или четене
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          BOARD_BOT_TOKEN: ${{ secrets.BOARD_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          PYTHONIOENCODING: utf-8
+          MANUAL: ${{ inputs.what }}
+        run: |
+          # Решава се по час, не по минута: GitHub често пуска крона с няколко
+          # минути закъснение и сутрешното съобщение не бива да се губи заради това.
+          if [ -n "$MANUAL" ]; then
+            FLAG="--$MANUAL"
+          else
+            case "$(date -u +%H)" in
+              05) FLAG="--sutrin" ;;
+              15) FLAG="--vecher" ;;
+              *)  FLAG="--chetene" ;;
+            esac
+          fi
+          echo "пускам $FLAG"
+          python3 tools/bot.py $FLAG
